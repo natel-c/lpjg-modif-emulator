@@ -1,0 +1,146 @@
+import "../../../data/ins/global.ins"
+! Note: we need to use a crop_n defintion, that fits the LUH2 crop data
+import "../../../data/ins/crop_n_luh2.ins"
+
+!groups needed for wetlandpfts, extracted out of arctic.ins
+group "lowshrub" (
+
+	! Typical species: Vaccinium vitis-idaea, Cassiope tet.,
+	! Ledum palustre, Erica spec.
+
+	shrub
+
+	! Allometry
+	crownarea_max 1.0
+	k_allom1 10
+	k_allom2 4
+	k_latosa 125
+	rootdist 0.16 0.16 0.16 0.16 0.16 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02	
+	root_beta 0.938		! Somewhat closer to tundra vegetation in Jackson et al.
+
+	! Longevity
+	longevity 25
+
+	! Bioclimatic limits
+	tcmax_est 5
+	gdd0_min 250		! Wolf et al (2008), Zhang et al (2013) have 300
+	gdd5min_est 100 	! Wolf et al (2008), Zhang et al (2013)
+
+	! Shade tolerance (Zhang et al. 2014 - Table S2b)
+	est_max 0.75
+	parff_min 1000000
+	alphar 2.0
+	greff_min 0.012
+	turnover_sap 0.01
+)
+
+group "cushionforblichenmosstundra" (
+
+	! Cushion forb, lichen and moss tundra
+	! Found in (tundra, High Arctic) peatlands
+	! Typical species: Saxifragacea, Caryophyllaceae, Papaver, Draba, lichens, mosses
+
+	grass
+   	boreal
+	pathway "c3"
+
+	! Structure and function
+	rootdist 0.37 0.23 0.15 0.09 0.06 0.04 0.02 0.02 0.01 0.01 0.0 0.0 0.0 0.0 0.0
+	root_beta 0.9555
+	ltor_max 0.4
+	turnover_root 0.5
+	turnover_leaf 0.6
+
+	! Bioclimatic limits
+	tcmax_est 5
+	gdd5min_est 0
+	phengdd5ramp 1
+	min_snow 50.0
+	gdd0_min 50
+	gdd0_max 150		! This is the main condition limiting CLM growing in the Abisko region.
+
+	! Tundra (High Arctic) peatlands
+	wtp_max -200
+	inund_duration 10
+
+	! BVOC values - Guy Schurgers, October/November 2011, Tang et al., 2016
+	eps_iso 1.29
+	seas_iso 0
+	eps_mon 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 		! Fraction from C3G
+	storfrac_mon 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+	ga 0.030
+
+)
+
+import "../../../data/ins/wetlandpfts.ins"
+
+!Climate data and co2
+import "../../paths.ins"
+
+param "file_gridlist" (str "gridlist.txt")
+
+!///////////////////////////////////////////////////////////////////////////////////////
+!Landcover area fraction files
+
+! following LU setup is for gross landuse simulation (gross transitions and with wood harvest on primary and secondary land)
+param "file_lu"   		(str "/data/benchmark_data/2023_03_02/landuse/LUH2/lu_1901_2015_luh2_Hist_CMIP_UofMD_landState_2_1_h_halfdeg_nourban_glwd3_peatland_approach_e_2023_03_02.txt")
+param "file_grossLUC"   	(str "/data/benchmark_data/2023_03_02/landuse/LUH2/gross_1901_2015_luh2_Hist_CMIP_UofMD_landState_2_1_h_halfdeg_nourban_glwd3_peatland_approach_e_2023_03_02.txt")
+param "file_lucrop"     	(str "/data/benchmark_data/2023_03_02/landuse/LUH2/crop_rfirr_1901_2015_luh2_Hist_CMIP_UofMD_landState_2_1_h_halfdeg_nourban_2023_03_02.txt")
+param "file_Nfert"      	(str "/data/benchmark_data/2023_03_02/landuse/LUH2/nfert_rfirr_1901_2015_luh2_Hist_CMIP_UofMD_landState_2_1_h_halfdeg_nourban_noman_2023_03_02.txt")
+param "file_woodharv_frac"      (str "/data/benchmark_data/2023_03_02/landuse/LUH2/harvest_1901_2015_luh2_Hist_CMIP_UofMD_landState_2_1_h_halfdeg_nourban_glwd3_peatland_approach_e_2023_03_02.txt")
+
+!///////////////////////////////////////////////////////////////////////////////////////
+! Output files
+
+file_aiso "aiso.out"
+file_amon "amon.out"
+file_cpool_natural "cpool_natural.out"
+
+file_mlai "mlai.out"
+file_mgpp "mgpp.out"
+file_maet "maet.out"
+file_mpet "mpet.out"
+file_mevap "mevap.out"
+file_mintercep "mintercep.out"
+file_mrunoff "mrunoff.out"
+file_mburned_area_out "monthly_burned_area.out"
+
+!///////////////////////////////////////////////////////////////////////////////////////
+!// RUN PARAMETERS AND OPTIONS
+
+ifbvoc 1
+
+! currently LUH2 data are without peat/wetland, so no CH4 emissions
+! LUH2 icwtr is the BARREN, N2O flux from BARREN should get excluded
+run_landcover 1	    ! Whether to use (and change) landcover fractions (1) or not (0)
+
+run_urban 0         ! Whether to simulate barren land (1) or not (0)
+run_crop 1          ! Whether to simulate crop vegetation (1) or not (0)
+run_forest 0        ! Whether to simulate managed forest (1) or not (0)
+run_pasture 1       ! Whether to simulate pasture (1) or not (0)
+run_natural 1       ! Whether to simulate natural vegetation (1) or not (0)
+run_peatland 1      ! Whether to simulate peatland (1) or not (0)
+run_barren 1        ! Whether to simulate barren land (1) or not (0); LUH2 icwtr is BARREN data
+
+ifprimary_lc_transfer 1   ! Whether to use primary/secondary land transition info in landcover transfer input file (1). or not (0)
+ifprimary_to_secondary_transfer 0 ! Whether to use primary-to-secondary land transition info (within land cover type) in landcover 
+                                  ! transfer input file (1). or not (0)
+                                  ! 0 if running with wood harvest file_woodharv_frac, otherwise double counting
+
+transfer_level 1          ! Pooling level of land cover transitions; 0: one big pool; 1: land cover-level; 2: stand type-level
+iftransfer_to_new_stand 1		! Whether to create new stands in transfer_to_new_stand() according to the rules in copy_stand_type()
+
+!///////////////////////////////////////////////////////////////////////////////////////
+
+ifmethane 1
+
+ifsaturatewetlands 1		! Whether to take water from runoff to saturate low latitide wetlands (1), or not (0)
+
+file_mch4 "mch4.out"
+file_mch4diff "mch4_diffusion.out"
+file_mch4plan "mch4_plant.out"
+file_mch4ebull "mch4_ebullition.out"
+file_mwtp "mwtp.out"
+
+file_soil_n2o_flux "soil_n2o_flux.out"
+

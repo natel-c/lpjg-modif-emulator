@@ -1,0 +1,25 @@
+# Author: Konstantin Gregor (konstantin.gregor@tum.de)
+# This Dockerfile creates a Docker image with Linux and all necessary libraries to run LPJ-GUESS (i.e., cmake, NetCDF, MPI, ...)
+# It is used to run the Gitlab pipelines.
+#
+# Once an image has been built from this Dockerfile, it is uploaded to the Gitlab container registry.
+# Gitlab runners are configured to use Docker executors.
+#
+# To get an updated version into the registry:
+# docker login stormbringer4.nateko.lu.se:5050
+# sudo docker build -f GitlabDockerFile . -t stormbringer4.nateko.lu.se:5050/lpj-guess-developers/lpj-guess:0.0.1 # be aware of proper semantic versioning!
+# sudo docker push stormbringer4.nateko.lu.se:5050/lpj-guess-developers/lpj-guess:0.0.1
+# After creating a new image, you then specify the new image with the new tag in .gitlab-ci.yml
+
+# starting from a Ubuntu 22.04 installation
+FROM ubuntu:jammy
+
+# install necessary libraries
+RUN apt-get update && \
+	apt-get install -y build-essential git cmake autoconf libtool pkg-config
+RUN apt-get install -y libnetcdf-dev libnetcdff-dev
+RUN apt-get install -y mpi
+RUN apt-get install -y libmpich-dev
+
+# check whether netCDF installation was successful
+RUN nc-config --all

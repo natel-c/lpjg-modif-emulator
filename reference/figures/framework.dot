@@ -1,0 +1,59 @@
+digraph G {
+	fontname="oxygen mono"
+	splines = ortho;
+	node[shape=box, height=.3, width=2, fontsize=10, fontname="oxygen mono"];
+	edge[color=black, arrowsize=.5];
+	ranksep = 0.25;
+
+	subgraph cluster_gridcell {
+		color = azure
+		label = "once per gridcell";
+		bgcolor = lightgrey;
+		node [style=filled,color=white];
+		getgridcell -> initdrivers -> landcover_init;
+	}
+	subgraph cluster_annual {
+		color = azure
+		label = "annual processes";
+		bgcolor = lightgrey;
+		node [style=filled,color=white];
+		outannual -> check_balance;
+		landcover_dynamics -> getmanagement;
+		growth -> growth [color=forestgreen, dir=back];
+		vegetation_dynamics -> vegetation_dynamics [color=forestgreen, dir=back];
+		getmanagement -> growth -> vegetation_dynamics -> outannual[color=none];
+	}
+	subgraph cluster_daily {
+		color = azure
+		label = "daily processes"
+		bgcolor = lightgrey
+		node [style=filled,color=white];
+		getclimate ->
+		dailyaccounting_gridcell ->
+		daylengthinsoleet ->
+"crop_sowing_gridcell\n\nlandcover_dynamics\n\ngetmanagement\n\nmanage_forests" ->
+		dailyaccounting_stand ->
+		dailyaccounting_patch ->
+"nfert\n\ncrop_sowing_patch\n\ncrop_phenology\n\nleaf_phenology\n\ninterception\n\ninitial_infiltration\n\ncanopy_exchange\n\nirrigation\n\nsoil_water\n\ngrowth_daily" ->
+		som_dynamics ->
+		methane_dynamics ->
+		blaze_driver ->
+		crop_rotation ->
+		outdaily;
+		blaze_driver -> dailyaccounting_patch[color=forestgreen];
+		crop_rotation -> dailyaccounting_stand[color=red];
+		outdaily -> getclimate[color=blue];
+	}
+
+	som_dynamics -> growth[constraint=false];
+	landcover_init -> getclimate[constraint=false];
+	growth -> methane_dynamics[constraint=false];
+	crop_rotation -> vegetation_dynamics[constraint=false];
+	outdaily -> outannual[constraint=false];
+	daylengthinsoleet -> landcover_dynamics[constraint=false];
+	getmanagement -> dailyaccounting_stand[constraint=false];
+	check_balance -> getclimate[color=blue, constraint=false];
+	check_balance -> getgridcell[color=blue, constraint=false];
+	landcover_init -> landcover_dynamics[color=none];
+	vegetation_dynamics -> dailyaccounting_stand[color=red, constraint=false];
+}

@@ -1,0 +1,3 @@
+# This is needed so that we can add the test_outputs directory to git.
+# Normally you can't add empty directories to git, but we need to have it in the repository such that the tests can run on gitlab, because they need to write in this directory.
+!.gitignore

@@ -1,0 +1,3192 @@
+------------------------------------------------------------------------
+r13203 | johan | 2024-10-24 15:52:08 +0200 (Thu, 24 Oct 2024) | 27 lines
+
+Reintegrated branch techfix (r13197-13202). Assorted technical fixes, including update of gutil.
+
+Main changes:
+* Suppressing sensitive warning (tellus benchmark). Setting a 1e-13 limit for warning 13a 
+  (stand fraction 0 when st input fraction > 0). (Mats, tech_fixes r13140)
+* Removed two unnecessary dprintf(\n) in parameters.cpp that cause guess.log to start with 
+  an empty screen when running many processes. (Johan, bugfix r13113)
+* Initialise aet to 0 in Individual constructor (Drew, bugfix r13131)
+* Fixed incorrect units for wind (U10) (Lars).
+* gutil library version updated from r11783 to r13195 in svn/gutil/trunk (Peter Paul, Johan)
+  * Gitlab issue-tracker item "va_end() is never called" in Gitlab/lpj-guess-developers/LPJ-GUESS/
+    /-/issues (gutil r13179): 
+  * Casting and initialization updates to avoid warning messages. Work partly done in 
+    branch gutil/branches/initialization_fixes (gutil r12183 and r13195)
+The revision numbers are from branches where they were initially committed. 
+
+Issues when updating:
+This trunk revision resets the pointer to the library /libraries/gutil (change r11783-->r13195).
+After you synced with trunk you might need to update your local copy to download the changes in gutil.cpp and gutil.h.
+
+Benchmarks:
+Crop_global: No difference in .out files as compared to trunk r13110. Confirmed in tech_fixes.
+
+Branch history:
+The changes were initially commited to branches bugfix (r12995-) and tech_fixes (r13138-)
+and later cherrypicked to the present branch.
+
+------------------------------------------------------------------------
+r13110 | johan | 2024-09-16 13:43:52 +0200 (Mon, 16 Sep 2024) | 35 lines
+
+Reintegrated branch tech_clustr (r11165-13109): updates to cluster submit scripts and the benchmarks script.
+
+Main contributor: Johan.
+
+Main changes:
+* The submit script and the benchmarks script now looks for the environment variable $COMPUTEACCOUNT: 
+  if it is not empty then the account string is used in the user's submitted jobs.
+  To utilize this feature, add this line to your .bashrc:
+  export COMPUTEACCOUNT=...
+  Replace "..." with your compute account code (e.g. for Lunarc, the naiss  code). 
+* General improvements to the benchmarks script: improved error output, progress.txt is appended to 
+  instead of overwritten, module list prints to info.local_modifications.txt.
+* Fixed Lunarc's scatterplot problem of crop_global (gnuplot in scatter_plot.sh).
+* Library-paths functionality to python2 (and gnuplot above) adapted to easybuild environments.
+* Lund's Lunarc submit script adapted to the new Cosmos cluster:
+  - Changed NPROC for benchmarks
+  - Check for 48 processes removed
+  - Changed name of aurora.tmpl to lunarc.tmpl in parallel_version/, and changed accordingly 
+    in submit_vars.sh:s and CMakeLists.txt.
+    A user of Lunarc Cosmos should change in his/her .bashrc into the following instead of "aurora":
+	export ARCH=lunarc
+
+Benchmarks output as compared to trunk 13034:
+* No changes to model output.
+
+Issues when updating:
+* Lund's Lunarc submit script template aurora.tmpl has been changed to lunarc.tmpl in the directory parallel_version/.
+  A user of Lunarc Cosmos should change in his/her .bashrc into the following instead of "aurora":
+    export ARCH=lunarc
+* To utilize COMPUTEACCOUNT feature for submitted jobs, add this line to your .bashrc:
+    export COMPUTEACCOUNT=...
+  Replace "..." with your compute account code (e.g. for Lunarc, the naiss code).
+
+Branch history: created @11165 from trunk r10994. @11957 getting the whole branch tech_submit (r10149-r11956).
+
+------------------------------------------------------------------------
+r13034 | johan | 2024-07-12 15:33:03 +0200 (Fri, 12 Jul 2024) | 56 lines
+
+Reintegrated branch benchmark_tellus (r10166-13024): adding real-world benchmark tellus.
+
+Benchmark tellus is the model-run part. The R-report generator part, tellme, will be 
+reintegrated to trunk at a later point.
+
+Main Contributor: Peter
+Minor contributions from Mats (r11589), Stefan (r12688), and Johan (a few technical changes).
+
+Main changes (for details, see the log of the original branch):
+* Ins files and parameter changes needed for tellus benchmark.
+  e.g. adapt the guess.ins for the tellus benchmark with LUH2 data files (see r10335)
+* Reading of gross transitions (externalinput)
+
+Issues:
+There are warnings in the tellus benchmark run, but no new warnings in the 
+crop_global-benchmark run nor in the other benchmarks (comparison of branch 
+HEAD r13024 with trunk HEAD r12981).
+There are 1389 gridcells with C imbalances and 255 with N imbalances in the tellus run.
+These need to be fixed in a later commit to trunk, and definitely before release of v4.1.2.
+Also there are warnings of type "no stand present when fraction is > 0 for stand type 0".
+The branch is reintegrated to trunk despite these warnings because
+* it is hoped that having the code in trunk might speed up the fixing of the problems,
+* the warnings appear only in the tellus output,
+* waiting for tellus benchmark to come to trunk blocks other development from reaching trunk.
+
+The imbalance warnings appear both when forced with CRU-NCEP and with CRU-JRA.
+The following max values were obtained when forcing with CRU-JRA 2.4.5m
+(steering group presentation run output12644svnmon.01mm, old CO2 forcing):
+The lines below are the largest values of the whole model run. Each line below 
+is unrelated to the next one, not from the same gridcells.
+WARNING: (-76.25, 8.75): Period N balance: 0.2992991418
+N fluxes: 0.2713236077
+N pool change: 0.1451870205
+N pool change: -0.1731970064
+WARNING: (99.75, 59.75): Period C balance: 0.0000000000
+C pool change: 9.6038566489, and equal flux with opposite sign
+C pool change: -9.6267711391, and equal flux with opposite sign
+
+Benchmarks results:
+The tellus benchmark output of this branch, forced with monthly CRU-JRA v2.4.5m 
+but with the old CO2 forcing was reviewed at the LPJ-GUESS Steering group meeting
+in Feb 2024 (as part of crujra_evaluation branch).
+Comparison of branch HEAD r13024 with trunk HEAD r12981:
+The other benchmarks are not affected by this commit to trunk, except for 
+crop_mixed_sites that changes minutely in a few .out files 
+e.g. the last decimal in only 2 values in anpp.out.
+
+Note when updating:
+Benchmarks wetland_global and wetland_sites print more decimals in 4 monthly .out files.
+New instruction file: data/ins/crop_n_luh2.ins
+
+Branch history:
+* Branch created @10166 from branch forestry_4.1.2 r10143 (which has subsequently been
+reintegrated to trunk @11208 (r8998-11198), and has later been fully synced with trunk
+including current trunk HEAD r12981.
+
+------------------------------------------------------------------------
+r12981 | johan | 2024-07-03 17:42:27 +0200 (Wed, 03 Jul 2024) | 25 lines
+
+Reintegrated branch bugfix 12955-12980: Urgent fixes to the recent trunk updates r12852,12951 (netcdf cru-jra forcing, and unit test functionality).
+
+Main contribution: Johan, Peter, David.
+
+Changes:
+* CMakeList.txt: Force c++11 standard, to adress a problem for mac users,
+  and supress deprecated-function warnings (only Mac and linux) (r12956).
+* Fix input data path to wetdays in paths.ins, and inconsistency in file path to wetdays in 
+  europe_cf.ins and global_cf.ins.
+* Fix for uninitialized lon,lat in getgridcell() in cfinput.cpp (David)
+  This last one is unrelated to the recent trunk updates r12852,12951.
+
+Benchmark results:
+Counterintuitively, these changes actually changes the model output slightly (minutely).
+The change is caused by r12956. The subsequent revisions in the branch 
+has no effect on model output.
+Crop_global report global table results, bugfix r12972 as compared to trunk r12951:
+almost all global table values do not differ, and the few that differ do so minutely:
+1960-90 cflux : nee 0.10%, fire -0.01%; nflux: 0.01%;
+cumulative carbon uptake 1901-2006: 0.23%.
+The change in r12956 that affects model ouput is probably the forcing of c++11 standard in
+CMakeList.txt, rather than the supression of deprecated-warnings, one has to assume.
+
+Branch history: created from trunk 12951 and synced getting r12977.
+
+------------------------------------------------------------------------
+r12977 | johan | 2024-06-28 16:11:31 +0200 (Fri, 28 Jun 2024) | 9 lines
+
+Update of the references directory to guess_reference r12047: Forest management, updated Appendix A (ins param definitions), plus various minor additions.
+
+Forest management: additions in scientific_description, and guessdoc.
+Appendix A (ins param definitions) updated to reflect the guess -help output of trunk r12951.
+Other smaller changes include:
+* units for relative humidity in Section 9 of scientific_description,
+* various guidelines added to guess_guiedelines,
+* and various small additions in guessdoc, including a table of contents.
+
+------------------------------------------------------------------------
+r12951 | johan | 2024-06-14 16:07:56 +0200 (Fri, 14 Jun 2024) | 22 lines
+
+Reintegrated branch tech_unitttest_ci (r12947-50) aka gitlab_reintegration3_tech_unittest_ci: unit test functionality, and setup of automated pipelines for Gitlab.
+
+Main contributor: Konstantin
+
+Main changes: for detailed history, see individual commits or the original branches. See section branch history below.
+Here we improve unit test functionality into LPJ-GUESS and setup automated pipelines using Gitlab.
+* We upgraded the Catch unit test framework to Catch2. Correspondingly, existing unit tests needed 
+  to be adapted and new ones were added. Please refer to the README.md within the tests directory.
+* .gitlab-ci.yml and GitlabDockerFile were introduced, containing everything required for automated 
+  pipelines on Gitlab, ensuring that the model code is properly working upon new commits. Please  
+  refer to these files for details.
+
+Benchmarks results:
+No changes to benchmarks output files as compared to trunk r12852
+
+Branch history:
+The code was developed in several branches:
+* branch tech_unitttests r10269-11891, created from trunk r10115.
+* intermittent development in a git branch on gitlab, based on the above branch.
+* branch gitlab_reintegration3_tech_unittest_ci r12865-12945 (created from what by git-svn): the above branch transfered from gitlab with git-svn.
+* branch tech_unitttest_ci r12947-50 (created from trunk r12852): a file per file copy of the branch above r12945 on top of trunk r12852.
+
+------------------------------------------------------------------------
+r12852 | johan | 2024-05-30 09:47:47 +0200 (Thu, 30 May 2024) | 71 lines
+
+Reintegrated branch BENCHMARK_CRUJRA_CF (r12229-12851): change of forcing to monthly NetCDF CRU-JRA, and to GCP-CO2
+
+Our new standard for climate forcing is monthly NetCDF CRU-JRA v2.4.5,
+and global carbon project CO2.
+The benchmarks suite is now using this new climate and CO2.
+
+Main Contributor: myself Johan; minor Lars.
+
+Main changes (for details, see the log of the original branch):
+* The input module for the benchmarks (BMs) changed from cruinput to cfinput 
+  in parallel/{simba.tmpl,aurora.tmpl}
+* The climate forcing for all benchmarks (paths.ins) are now CRU-JRA v2.4.5m 
+  and the CO2 forcing has been changed to global carbon project CO2: 
+  global_co2_ann_1700_2022.gcp.txt (Friedlingstein et al., 2023. Global Carbon 
+  Budget 2023. Earth System Science Data 15, 5301–5369.)
+* The cfinput module has been corrected so that it works with monthly NetCDF input.
+* Removed search radius in some benchmarks (BMs) config because cfinput module 
+  has no support for it yet.
+* Updated /data/ins/{global_cf.ins,europe_cf.ins} to contain the filenames of the  
+  CRU-JRA 2.4.5m forcing that now is the standard for LPJ-GUESS. Ditto CO2, soilcode.
+  In analogy to global_cru.ins.
+* The cf-gridlist functionality (indices) still works but is nolonger 
+  required for cf input (since reintegration of branch tech_cfinput to trunk).
+
+Issues springing from the change to cfinput module:
+* There is no search radius for ndep. This may prevent some gridcells from being
+  read in.
+* The benchmarks emdi_europe, soil_temperature, fluxnet, and diurnal_pristine_sites 
+  does not work currently. They will be fixed in a later commit to trunk.
+  All other benchmarks works.
+* The default input module is still cruncep. That too will be fixed in a later commit.
+  
+Other changes:
+* Fixed erroneous units in the crop_global and global benchmarks reports.
+* Submit_vars nprocess on cosmos changed i some BMs.
+* Improved some error messages.
+* Added a configuration file for VScode, one for linux, one for MS Windows.
+
+Benchmarks results. Differences compared to trunk r12453:
+* Crop_global: Fluxes 1961-90: carbon: veg, repr, soil, & fire ca -1%; 
+  nitrogen: fix -8%, fire +5%, leach -32%. Pools 1961-90: carbon: veg & litter -7%,
+  soil -2%, total -4%; nitrogen veg, litter, soil, and total -2%.
+  Large changes in Runoff 1961-90: surf +24%, drain -32%, base -14%, total +8%.   !
+  Cumulative period uptakes: +33 Gt C, +0.35 Gt N (See the contribution from change 
+  in CO2 forcing below).
+* Global PNV:  Fluxes 1961-90: carbon: veg, repr, & soil -1.5%, Fire -6%; 
+  nitrogen: fix -14%, fire +4%, leach -36%. Pools 1961-90: carbon: veg & litter -7%, 
+  soil -2%, total -4%; nitrogen: veg & litter -3%, soil -2%, total -2%.
+  Large changes in Runoff 1961-90: surf +24%, drain -37%, base -23%, total +11%.  !
+  Cumulative period uptakes: +22 Gt C, +0.3 Gt N.
+This branch output was reviewed at the LPJ-GUESS Steering group meeting in Feb 2024, 
+but using the old CO2 file (NOAA_ESRL), not the GCP CO2 file of this commit.
+The extremes in diff GCP CO2 minus NOAA_ESRL CO2 is +1ppm in 1948 and -1.8ppm in 2017. 
+The change of CO2 forcing changes the output further. This change has not been 
+reviewed yet. 
+
+The contribution by the CO2 change, i.e. the change in the current branch, solely from 
+going from the old CO2 file (NOAA_ESRL) to the GCP file (no model code change) is:
+Benchmark crop_global (r12748): 
+* Fluxes 1961-90: <0.5%C except for fire (-3.4%C, -1.5%N), and leach (-1.1%N)
+  Pools, 1961 to 1990: carbon: veg -1.2%, litter -2.4%, soil -3.4%, total -2.8%;
+  nitrogen: veg -0.8%, litter -1.7%, soil -3.5%, harv -1.4%, total -3.5%
+  Runnoff insignificant changes.
+  Significant change in period-cumulative pools and fluxes: -34 -> -9 Gt C 
+  0.15 -> 0.43 Gt N.
+
+Branch history:
+Created from branch tech_cfinput r12003 @12229, and later synced fully with 
+tech_cfinput (r12814,20) which included sync with current trunk HEAD,
+and then with trunk HEAD (r12838).
+
+------------------------------------------------------------------------
+r12838 | johan | 2024-05-28 13:48:33 +0200 (Tue, 28 May 2024) | 29 lines
+
+Reintegrated branch tech_cfinput (r11995-12837): improvements to the cfinput module.
+ 
+Main Contributor: Adrian
+ 
+Main changes (for details, see the log of the original branch):
+* Optional gridlist_cf. No longer mandatory.
+  The gridlist_cf input is difficult to understand and there are often issues with creating an X,Y 
+  based gridlist instead of the regular lon,lat gridlist.
+  Solution: Make the gridlist_cf input optional by checking if it is defined in the instruction files. 
+  This way old users will not get their setups ruined by the new update and new users unaware of the 
+  gridlist_cf parameter will never notice this.
+* Improvement to units.
+  Units of input files come in different formats, e.g,. 'W m-2' or 'W/m^2'. This fails the program 
+  and creates a difficult error message. In addition to this, global input files are heavy to update 
+  with units in new formats.
+  Solution: Check an array of options for the units. This array is also simple to update if needed. 
+  The error message should also be more helpful.
+* The code review discussion (Konstantin) can be found here: 
+  https://stormbringer4.nateko.lu.se/lpj-guess-developers/LPJ-GUESS/-/issues/2
+ 
+Benchmarks results:
+The branch is technical, no changes to output expected.
+This branch was used together with the benchmark_crujra_cf branch and the benchmark_tellus branch 
+forced with monthly CRU-JRA v2.4.5m to produce the output that was reviewed at the LPJ-GUESS 
+Steering group meeting in Feb 2024.
+ 
+Branch history:
+Created from trunk r11938 @11995, and later fully synced with current trunk HEAD @12837.
+
+------------------------------------------------------------------------
+r12826 | johan | 2024-05-23 13:26:44 +0200 (Thu, 23 May 2024) | 2 lines
+
+Reverted previous accidental commit (r12825 "Adding .gitignore").
+
+------------------------------------------------------------------------
+r12825 | runa | 2024-05-23 10:27:02 +0200 (Thu, 23 May 2024) | 1 line
+
+Adding .gitignore
+------------------------------------------------------------------------
+r12453 | johan | 2023-11-27 16:49:40 +0100 (Mon, 27 Nov 2023) | 23 lines
+
+Reintegrated branch bugfix (r12251-12423): fix for snowpack and snowdepth; plus a small technical fix.
+
+Main contributor: Peter, David
+
+Main changes:
+* Fixed a bug regarding how snowpack and snowdepth was used. (David, r12423)
+  Snow depth depends on the amount of ice in the snowpack and the density of the snow. So shouldn't have a 
+  variable storing this entity as it always needs to be updated if either snowpack or snow density is updated. 
+  Easy to miss. Hence a function returning the snow depth is introduced instead.
+* Fixed a technical bug (a management error message: pft not in pftlist), (Peter, r12252)
+  that Peter found in european_applications line 1789, parameters.cpp.
+  Peter's fix applied here at line 1759.
+
+Benchmarks results, as comparison with trunk r12221:
+* Crop_global and global PNV: base runoff -1%; no significant changes to fluxes and pools, 
+  largest being litterCpool -0.4% in global PNV; fire GFED region Eur +8%, BONA, MIDE +3%, others less.
+* Wetland global: CH4-C emissions from ebullition: largest change: Feb: +20%, other tables <1%.
+* Wetland sites: Seasonal mean methane emissions change maximally 20% when >1g/m2.
+* Diurnal pristine sites: change of dominant pft in some of the 10 gridcells.
+
+Branch history:
+Created @r12251 from trunk r12221(today's HEAD).
+
+------------------------------------------------------------------------
+r12221 | johan | 2023-09-13 14:35:52 +0200 (Wed, 13 Sep 2023) | 15 lines
+
+Reintegrated branch bugfix (r11968-12077): fix for water balance errors when iftwolayersoil is activated.
+
+Main contributor: Paul
+
+Main changes:
+* Fix for water balance errors when iftwolayersoil is activated.
+
+Benchmarks results, comparison with trunk r11938.
+* All benchmarks, incl crop_clobal, with iftwolayersoil=0 (default): identical output.
+* Crop_global, with iftwolayersoil=1: C pools, Cfluxes, & runoff: no significant change (<~1%);
+N-fluxes: leach +25%, flux -3%, harvest -5%, Soil-N: -4%, N2 -19%.;
+Fire GFED regions: EUR 3->18, EQAS 136->2, AUST 95->49, NHSA 17->37.
+
+Branch history:
+Created @11968 from trunk r11938(today's HEAD)
+------------------------------------------------------------------------
+r11938 | johan | 2023-05-29 15:09:47 +0200 (Mon, 29 May 2023) | 23 lines
+
+Reintegrated branch bugfix (r11490-11937): small changes to waterbalance checks, soil temp, fire, and forestry/landuse.
+
+Main contributors: Paul, Lars, Mats
+
+Main changes (for details, see the log of the original branch):
+Paul:
+* Slightly less strict water balance check: to remove water imbalance warnings from crop_mixed_sites benchmark output.
+* Moved soil temp initialisation in cloned stands to a more appropriate method, Stand::init_stand_lu
+Lars:
+* Bug allowing negative Nesterov index and divide by zero fixed (r11705).
+Mats:
+* Improving text input coordinate search, plus adding option to choose between different fast data access options.
+* Changed default value and meaning of first_targetyear.
+* Changed defulat of relax_target_cutting_after_pft_gone
+* Small update to previous fix improving text input coordinate search (comment only)
+
+Benchmarks differences of r11793 as compared with trunk r11481, Johan:
+* crop_global: GFED fire regions BOAS and CEAS change 0.5-1%. Otherwise differences are close to zero.
+  Differences likely stem from bugfix r11705 (see above).
+  
+Branch history:
+* Branch created from trunk r11489, later synced with trunk HEAD (r11794: addition of tech_licence).
+
+------------------------------------------------------------------------
+r11794 | johan | 2023-04-17 18:15:07 +0200 (Mon, 17 Apr 2023) | 26 lines
+
+Reintegrated branch tech_license (r11701-11785): addition of licence text-snippet and licence file at multiple places in the code.
+
+Main contributor: Ben texts, Johan implementation.
+
+Main change: Addition of licence text-snippet to all cpp-files and to guess.h, and licence file to relevant catalogues.
+* The file LICENCE.TXT was added to: root, command_line_version, cru/guessio, framework, modules, parallel_version, tests, windows_version;
+  i.e. all catalogs with cpp files except benchmarks.
+* A licence text-snippet was added in the top comment section at the top of each cpp-file and of guess.h.
+* Both changes were made automatedly with bash script addlicencetext.sh.
+
+To note when updating:
+* Libraries reference-links have been updated to new revisions of plib, guessnc, and gutil:
+  gutil 7859 to 11783; plib r2843 to r11782; guessnc r8266 to 11784
+* With these changes, a  small coding change in plib.cpp was also introduced:
+  an old change r3530 ("Fixed an Intel warning" by Joe: removal of a semicolon).
+* Apart from that change in plib, all changes are in commenting.
+  No changes to executable code, other than that small change in plib.
+
+Benchmarks output / reintegration-checklist:
+* No changes in output from the benchmarks as compared to trunk r11481. No new warnings i logs.
+* No new compile warnings (simba).
+* No other reintegration-checklist checks were required.
+
+Branch history:
+* Branched off from trunk r11481, which still is HEAD. No syncing required.
+
+------------------------------------------------------------------------
+r11481 | johan | 2023-01-31 13:02:50 +0100 (Tue, 31 Jan 2023) | 38 lines
+
+Reintegrated branch bugfix (r10598-11455): bugfixes to chill days, N mass balance when ifnlim=0, net mineralisation, and stand cloning.
+
+Also some technical fixes, not affecting benchmark .out-files.
+
+Main contributors: Peter, David, Paul.
+
+Main changes (for details, see the log of the original branch)
+in driver.cpp, somdynam.cpp, soil.cpp:
+* Fix chilldays handling. r10690, driver.cpp, Peter
+* Nitrogen mass balance is kept even if ifnlim is set to 0. r10804, somdynam.cpp, David
+* Made sure that somfluxes always result in a net mineralisation that isn't more 
+  negative than there is available soil N if ifnlim is set to 0. r10844, somdynam.cpp, David
+* Bugfix to trunk r11453 (soil_physics_update): Bugfix to remove a double call to 
+  soil_temp_multilayer on Jan 1 in a cloned stand. r11448, soil.cpp, Paul
+Technical fixes
+in all other changed files than the above ones (no effect on benchmarks .out-files):
+* Variable initialization (all over the code) & memory bugfixes. r11425, Paul
+* Correction of some local tests to do with agdd0 that came with the previous 
+  commit. r11431, Paul
+* Fixed a bug in the constructor. r11432, Paul
+
+Reintegration checklist, Johan:
+* Restart OK (global pfts); Valgrind OK (global pfts).
+* Windows graphical shell not tested.
+
+Benchmarks differences of r11455 as compared with trunk r11453, Johan:
+* crop_global and global PNV: very small differences in C- and N- fluxes and pools
+  (soil pools and N-litter pool: <1%, others <<1%), except in crop_global: Global  
+  Terrestrial Nitrogen Uptake, 1901 to 2006: -8%, pool and flux.
+* europe, very small changes in maxLAIeurope gmap.
+* wetland_global and _sites: all tables <<1% except _global: emissions from  
+  plant transport: Feb Mar (still <1%).
+
+Branch history:
+* Branch created from trunk 10596.
+* A few technical fixes r11235-11269 were moved out from this branch @11327
+  to the branch tech_fixes2 @11326 (tech_fixes2 are already in trunk @11453).
+
+------------------------------------------------------------------------
+r11453 | johan | 2023-01-23 13:38:52 +0100 (Mon, 23 Jan 2023) | 33 lines
+
+Reintgrated branch tech_fixes2 (r11325-11429): technical fixes of primarily the forestry_4.1.2 feature (trunk r11208).
+
+Main contributors: Mats; other contributors: Lars, Johan.
+
+Changes (for details, see the log of the original branch):
+  (The 5 first ones are from the branch bugfix (commits r11234-r11269 to the bugfix branch)   
+   and were moved to this branch by merging (r11326) and removed from the bugfix branch).
+* Fix of a bug introduced in trunk r11208 (forestry_4.1.2) causing an error on MAC systems. r11234. Johan.
+  The windows specific code line that caused the error on MAC is now hidden behind a windows-checking #ifdef.
+* Fixing some compilation warnings on Mac. r11245. Mats.
+* Fixing spelling. r11259.  Mats.
+* Units for HYDE3.1 data corrected in the comments. Not affecting the actual code. r11265. Lars
+* Adding the name of the missing map file in an error message in TimeDataD::CreateFileMap(). r11269. Johan.
+* Correcting cmass_fire calculation in blaze_reduce_biomass(). r11370. Mats.
+  This variable is only used for output in forest_cflux_veg.
+* Fixing bug in r11245 above. r11371. Mats.
+* Graceful program failure when undefined management type name is used in a stand type. r11387. Mats.
+* Reverting bug introduced into trunk r11208 with forestry_4.1.2 branch (r11159). r11428. Mats.
+
+Reintegration checklist:
+* Valgrind, restart, and windows graphical shell not tested (indata.cpp, guess.h).
+
+Benchmarks results as compared with trunk r11300:
+* No changes to benchmarks .out-files.
+* No errors or warnings apart from the water balance warnings in crop_mixed_sites already present since 
+  trunk r11300, and which are planed to be fixed in conjunction with C- & N- balance warnings in branch tellus.
+
+Changes to output:
+* Output may change in other .out-files than the ones being printed to in the benchmarks.
+
+Branch history:
+* Branch created @11325 from trunk r11208 (not HEAD), and synced with trunk r11300.
+
+------------------------------------------------------------------------
+r11300 | johan | 2022-12-22 12:26:09 +0100 (Thu, 22 Dec 2022) | 42 lines
+
+Reintegrated branch soil_physics_updated (r10337-11246): Soil physics updates.
+
+This branch improves the calculation of soil temperature, and adds both energy 
+conservation checks and water balance checks. Includes a few bugfixes related to 
+these. Also includes some renaming of variables.
+
+Note: there are log-warnings for water imbalances when running benchmark 
+crop-mixed-sites, which will be fixed later.
+
+Main contributors: David and Paul
+
+Main changes (for details, see the log of the original branch):
+Soil physics:
+* cnstep_full (correct soil heat diffusion equation) now used as standard, replacing cnstep. 
+* One energy-conserving phase change scheme used.
+* Added a water balance check (similar to C & N mass balance checks)
+* Code to remove water balance issues when new stands are created, with extra code added
+  to deal with cases where there is ice in a soil layer
+* Clarification of the meaning of the input parameter ifsaturatewetlands
+Bugfixes:
+* Bugfix (r10959) to avoid possible NaNs when restarting and there's landuse. 
+  Found my Matt Forrest & Sam Rabin 
+* Bugfix for wetland water conservation in cells south of 40N.
+* Bugfix for water imbalances when there is a change in land use fractions among existing stands.
+
+Benchmarks results as compared with trunk r11208:
+Mostly minor. Things to note:
+* crop_global: Slight increase (1990-2000) in NPP (< 1%) and slight decrease in NEE 
+  (-15%, from -0.74 to -0.62 PgC/yr). Slight increase (1%) in veg and soil cpools
+* soil_temperature: Improvements seen in spring and autumn temperatures, especially 
+  at low temperatures. Warmer soils in winter.
+* wetland_global & wetland_sites: Minor changes. 
+* panarctic: Warmer soils. More BNE and BINE in Europe/W Russia. Less BNS. Sharper treeline.
+* global (PNV): C-flux 1961-90: +1% (fire 2%, NEE -1%); 1990-2000: ditto, NEE -3%. N-flux: 
+  fix +1%, flux +2%, leach 1961-90 -1%; others no change. C&N-pools: litter +3%&+5%; others +1%. 
+  Runoff: Base +7%; others -1%. Gmaps (LAI): More BINE (and BNE) in Europe (incl Russian-) and 
+  N. America; BNS loses area in Siberia; IBS loses area in west China/Mongolia. Biomes: only 
+  slight changes (also south of lat 40N, e.g. in Indochina).
+
+Branch history:
+* Branch created @10337 from trunk r10115. Synced with trunk successively up to trunk HEAD (11208).
+
+------------------------------------------------------------------------
+r11208 | johan | 2022-11-22 12:55:59 +0100 (Tue, 22 Nov 2022) | 75 lines
+
+Reintegrated branch FORESTRY_4.1.2 (r8998-11198): Forest management.
+
+This branch adds forest management capabilities, plus a few bugfixes, a few various 
+model fixes, and a verification test for secondary stands (a new benchmark).
+
+Main contributor: Mats
+
+Main changes (for details, see the log of the original branch):
+Forest management:
+* LUH2 wood harvested area, modelled by clearcutting and creating new NATURAL stands.
+* Detailed continuous and clearcut forestry: rotation time, cuttings at specific times
+  within rotation period (fraction cut, cutting preference (old/big first, pft:s outside
+  of selection first)).
+* Cutting to reach prescribed relative pft cmass fractions in a mixed forest.
+* Automated thinning (Reineke's rule) and clearcut (stand density limit).
+* Planting systems for tree functional groups (ForestNE, ForestND, ForestBE, ForestBD).
+* Forest management rotation (change).
+* An explanation for the forestry instruction file settings will be added to the LPJ-GUESS  
+  documentation, in guessdoc.
+Bugfixes:
+* fixing harvest_pasture() bug that caused nitrogen that should go to litter to be
+  retained in living biomass.
+* Fix that updates max_n_storage after wood harvest.
+* Fixing stand output problem (crashed at end of simulation on Linux).
+Various:
+* Changed tcmin_surv and tcmin_est for Fag_syl and Abi_alb (affects european benchmarks output, r9451).
+* Pft Lar_dec (Larix) added to europe.ins (default include 0)
+* Tillage factor (per st/mt), directly scaling soil respiration (value from 1.0 (no-till) 
+  to 4.5, default value for crops 2.0).
+* Enabling of irrigation of non-cropland stands.
+
+Changes to input/added inputs (text input):
+* Setting LUTOMEMORY to false by default, enabling text input file mapping, making access quick after 
+  the first usage of a file. Requires write rights in the folder where the text file is located.
+* New class, MiscInput, for additional environmental input from text files (disturbance input included). 
+  Separate calls for static and dynamic input data are made from framework().
+  Disturbance input for gridcell and stand types is added.
+* Text input of pft values per management type (selection target cutting fractions for different mt:s added).
+* Revising landcover fraction text input data precision handling. Precision (number of decimals) in text
+  input files is now parsed and INPUT_RESOLUTION is calculated. The range is restricted to 3-14 digits. 
+  In case of very large numbers of stand types, a lower INPUT_RESOLUTION value may be necessary. A higher
+  input precision may thus be set in the instruction file by using the parameter input_precision_force. 
+  The update should remove area shuffling artefacts caused by using too low INPUT_RESOLUTION values. Biomass
+  imbalance limits from check_year() and check_period() are now set to 50*INPUT_RESOLUTION in simulations 
+  using landcover area fraction input.
+
+Changes to Output (text output):
+* Stand type(st columns) output.
+* Pft per stand type output in separate output files  (cmass added).
+* Stand output files put into stand_output folder.
+* Age and diameter structure output.
+* Landscape-level output for cmass and anpp. In contrast with the standard output, values for pft is here 
+  the mean of the whole gridcell (cmass_landscape) or landcover area (e.g. cmass_landscape_forest), 
+  not only for stands where the pfts are active.
+* A new benchmark test "secondary_stands", a pass/fail test to test for problems with secondary 
+  stands (e.g. a member variable that was not inititated in constructor, etc.).
+  See comments in benchmarks/secondary_stands/postprocess.sh and in secondary_stands\config\guess.ins.
+
+Benchmarks results as compared with trunk r10994:
+* Crop global: All tables <<1% except: N-flux NEE 1990-2000(-3%), C- & N-pools Litter (+1%,+2%), 
+  total period cumulative uptake 1901 to 2006: C (-4%), N (+~50%). 
+  Changes are likely because of the harvest_pasture() bug fix.
+* Europe PNV: Changes in LAI: major Fag syl (eastern europe); lesser: Que rob, and perhaps Pin syl, Fra exc, 
+  Car bet. And a 4-fold increase in monoterpene in eastern europe. 
+* Emdi_eur minimal changes, Pristine sites most sites identical max LAI but change of dominating species in 
+  2 sites. Diurnal Pristine sites most sites identical max LAI but change of dominating species in 1 site.
+* All the difference to trunk in the european benchmarks, incl europe PNV, is caused by the change in 
+  instruction paramenters tcmin_surv and tcmin_est for Fag_syl and Abi_alb (r9451). They give output  
+  identical to trunk when that revision is reverted.
+* Global PNV, emdi_global, fluxnet, soil_temp, panarctic: no changes to out-files.
+* Wetlands global- and sites, differ only in cflux.out Slow_h columnwidth. No change to CH4 emissions or other values.
+
+Branch history:
+* Branch created @8998 from trunk r8877. Synced with trunk successively up to trunk HEAD (10994).
+
+------------------------------------------------------------------------
+r10994 | johan | 2022-09-13 10:47:57 +0200 (Tue, 13 Sep 2022) | 76 lines
+
+Reintegrated branch litterfall (8713-10946): Improved litter fall. Plus change of 6 variable names all-over the model.
+
+Main contributor: David W.
+
+The feature change is mainly in the following files (line numbers in parentheses, 
+(*)= the major changes): driver.cpp(691*), growth.cpp(143), guess.cpp(326), 
+guess.h(3866,73;3954;3958,61), somdynam.cpp (859,891,896-1104*), whereas changes 
+in other files are mainly/only change of variable names.
+(N.B. The change of variable names occurs also in the above listed files but are 
+not numbered).
+
+Main changes:
+* Feature litterfall, description :
+  The litterfall routine is updated. All litter is still created on the last day
+  of the year but litterfall is now PFT dependent.
+  Woody litter is dropped as a fraction every day of the year. Evergreen PFTs drop
+  their leaf and fine root litter as a fraction every day of the year.
+  Deciduous PFTs drop their leaf and fine root litter as a fraction every day of
+  January in the NH and July in the SH.
+  Raingreen PFTs drop their leaf and fine root litter as a fraction every day of
+  the driest month of the year.
+  This update removes the strange Rh around the equator and is closer to a more
+  correct representation of litterfall.
+
+* Change of variable names, in many files of the code (in all files changed in this commit).
+  These are the variables changed (the occurrences of changes in parentheses):
+  cmass_litter_leaf           (89)
+  cmass_litter_root          (70)
+  cmass_litter_sap            (57)
+  cmass_litter_heart        (55)
+  cmass_litter_repr          (38)
+  cmass_harvested_products_slow          (42)
+  nmass_harvested_products_slow         (42)
+  The variable name change is invariably the addition of cmass_ or nmass_
+  at the beginning of the original name: e.g.: litter_leaf --> cmass_litter_leaf.
+
+Best practice note to authors of future branches:
+* Please commit feature changes and variable-name refactorings, respectively, to
+  different commits in your branch. Reasons:
+  1. to make it easier for a user to distinguish between the change of the feature vs
+  the "non-coding" changes (that do not change the model behavior) of the variable-
+  names changes.
+  2. to make it possible to run tests that verifies that no accidents were made when
+  refactoring variable names.
+  3. to make it possible to pull out the change of variable names to another branch if 
+  deemed necessary.
+
+Benchmarks results, as compared to trunk r10816:
+* crop_global (1961-1999): C-fluxes: fire +5%; other <<1%. N-fluxes: fire -6%, leach +6%, 
+  other <1%. Pools: litterC +5%, litterN +9%, other <<1%. gmaps: no obvious changes.
+* global PNV (1961-1999): C-fluxes: fire +5%; other <1%. N-fluxes: fire -6%, leach +6%, 
+  fix -2%, other <1%. Soil Nitrogen Fluxes: NH3, NO, N2: down 10-14%; N2 up 22%. 
+  Pools: litterC +1%, litterN +7%, other <1%. VegC gmap: no obvious changes even at the equator.
+  No obvious changes to biomes gmap.
+* europe PNV: no major changes to maxLIA gmap.
+* wetlands_global: Little change to global numbers but up to 18% change in the 
+  table Monthly total emissions.
+
+This update changes the competition between IBS and TeBS in Europe and North America, 
+with an increase in TeBS (Stefan).
+
+Note for release notes of 4.1 release 2.
+* A temporary solution to the drastic difference in litterfall above and below the equator.
+  Currently, leaf and fine root litter is dropped on the 1st of January in the NH and the
+  1st of July in the SH. This creates a distinct difference in Rh just above and below the
+  equator when litter is dropped as can be seen if monthly Rh is plotted on a global map.
+  This bugfix addresses this by specifying that evergreen PFTs release their leaf and fine
+  root litter from last year as a fraction every day during this year, deciduous PFTs as a
+  fraction during every day of January in the NH and July in the SH, and raingreen PFTs as
+  a fraction every day during the driest month of the year. NOTE: this fixes the unrealistic
+  Rh distinction above and below the equator, while not being perfect, the model can now
+  simulate realistic Rh around the equator and globally.
+
+Branch history:
+* Created @8713 from trunk r8538. Synced with trunk at several points incl r10596,10816 (HEAD).
+
+------------------------------------------------------------------------
+r10816 | johan | 2022-07-01 16:54:16 +0200 (Fri, 01 Jul 2022) | 29 lines
+
+Reintegrated branch bugfix_nlim (r10176-10802):  Fixes issue with N limitation
+
+Main contributor: David W.
+
+Main change:
+* Fix for issue with N limitation
+  If Vmax results in an N demand higher than allowed limits and leaf N is at its limit,
+  then N demand is zero.
+  Before, N limitation on productivity was connected to N demand resulting in NO limitation
+  in this case despite Vmax demands a higher N content in the leaf.
+  This has now been corrected so that if Vmax demands a higher leaf N than its limit,
+  there is always a limitation on productivity.
+
+Benchmarks results, as compared to trunk r10596:
+Note the biome change in e.g. central europe (the previous IBS greff_min tuning might benefit
+from a slight moderation; however, the plan is that we don't do any new retuning before we have seen the
+output form the tellus benchmark).
+* crop_global (1961-1999): Fluxes: 19% reduction of C- fire flux, 3-5% reduction in fluxes of C (veg,
+  repr, soil, harvest) and of N (fix, harvest). VegC and SoilC pools reduced 9-13%. N Pools Veg & Litter -6%.
+* global PNV (1961-1999): similar to crop_global, although larger change in leach (-5%).
+  Biome change: e.g. central europe changes from a mix to being dominated by temp decid forest
+  (not only spatally but also in the gmap Dominant PFT's fraction).
+* Wetland global: reduced Total monthly CH4-C emissions (especially from plant transport: ca -10%)
+  Wetland sites show similar-size changes for some sites (or slightly larger).
+* No errors or warnings in logs.
+
+Branch history:
+Created from trunk r10176, synced with trunk r10596 (HEAD).
+
+------------------------------------------------------------------------
+r10596 | johan | 2022-04-22 11:17:29 +0200 (Fri, 22 Apr 2022) | 27 lines
+
+Reintegrated branch bugfix (r9648-r10536): A fix for the water uptake of crops.
+
+Main contributor: Stefan
+
+Main changes (for details, see the log of the original branch):
+* A fix for the water uptake of crops. Crops were previous to this water stressed 
+  throughout the growing period, which led to a marked CO2-fertilisation effect.
+  This bugfix addresses the crop CO2 fertilization issue, that we mentioned in the 
+  release notes of Version 4.1 release 1 of Oct 2021.
+  NOTE: this fixes the unrealistic CO2-fertilisation effect, while not being perfect, 
+  the model can now be used to do simulations with crops and elevated CO2.
+Minor other changes:
+* Fix for an outdated path to guesswin.exe on stormbringer. Johan.
+* Initiatisation of Climate member variables. Paul.
+
+Benchmarks results (r10536):
+As compared to trunk r10115:
+* Crop global: All tables <<1% except: C fluxes (e.g 1961-90: Veg +1% Fire +1%, Harvest +7%),
+  N fluxes (e.g 1961-90: Fix +3% Leach -8%, Harvest +6%, NEE +7%), 
+  soil N fluxes (1990-2000: all except N2:ca -3%), runoff (drain -5%, base and total -2%) 
+  and fire regions (ca +3%: NHSA, SHSA, EURO, MIDE).
+* All other benchmarks, except crop_mixed_sites, have identical out-files 
+  as compared to reference trunk output incl e.g. Global PNV.
+* No errors or warnings in logs.
+
+Branch history:
+Created from trunk r9640, synced with trunk r9659-10115 (HEAD).
+------------------------------------------------------------------------
+r10115 | johan | 2021-10-13 15:25:29 +0200 (Wed, 13 Oct 2021) | 10 lines
+
+RELEASE 4.1. Small change to Documentation for LPJ-GUESS version 4.1.
+
+This commit is a change directly in trunk: not branch reintegration.
+Because it is only a change in svn-property ^/guess_reference (@10093 --> @10110)
+
+Change:
+* last small changes to guessdoc.doc and scientific_description.docx
+
+This trunk-commit will in a moment be tagged as an LPJ-GUESS release version: tags/4.1_211013.
+
+------------------------------------------------------------------------
+r10096 | johan | 2021-10-12 19:10:03 +0200 (Tue, 12 Oct 2021) | 6 lines
+
+RELEASE 4.1. Documentation for LPJ-GUESS version 4.1, plus small benchmarks script fix.
+
+Reintegrated branch release_4.1_documentation (r10089-10094): Documentation for LPJ-GUESS version 4.1, and small fix in postprocess.sh of 3 benchmarks.
+
+This trunk-commit will in a moment tagged as an LPJ-GUESS release version: tags/4.1_211012.
+
+------------------------------------------------------------------------
+r10071 | johan | 2021-10-10 10:58:01 +0200 (Sun, 10 Oct 2021) | 27 lines
+
+Reintegrated branch release_morefixes (r9947-r10070): final fixes for Version 4.1 release.
+
+Main contributor: Johan. Thanks Peter for finding 2 bugs.
+
+Main changes (for details, see the log of the original branch):
+Bugs:
+* Fixed mistake from branch branch fire_blazebug_june (trunk r10042): unnecessary 'if' in constructor. (r10062) 
+* Fix for overlapping column widths in dailyclimate out file: made rad column wider. (r10024) 
+* Fix for division-by-zero assert fail from call to Historic mean() from miscoutput.cpp. (r10023) 
+Technical:
+* Change of cmake minimal from 3.1 to 2.8.12.2, since we can test with that version. (r9995 ) 
+* Added missing embed flags in postprocess.sh for benchmarks panarctic, wetland_sites, soil_temperature. (r9955 ) 
+Documentation/Commenting:
+* Updated readme.txt. Version in header, benchmarks section, signature. (r10040) 
+* Removed pfts BLSE & BLSS, and group "lowshrub" from global.ins. (r9964 ) 
+* Commenting in global.ins: removed obsolete comments. (r10018) 
+
+Benchmarks results:
+* Branch release_test r10063 (which contains/corresponds to this branch): 
+  No differences in out-files, as compared to trunk r10042 (i.e. fire_blazebug_june (r9713-10001)).
+
+Output and/or input differences:
+* Fix for overlapping column widths in dailyclimate out-file: made "rad" column wider.
+
+Branch history:
+Created from trunk r9945, synced with trunk getting r9957, r10042.
+
+------------------------------------------------------------------------
+r10042 | johan | 2021-09-30 16:23:14 +0200 (Thu, 30 Sep 2021) | 31 lines
+
+Reintegrated branch fire_blazebug_june (r9713-10001): minor fixes to BLAZE/SIMFIRE.
+
+Main contributor: Lars
+
+Main changes (for details, see the log of the original branch):
+* Bug regarding accumulated area burnt & effective burned area output fixed.
+* Bug w.r.t. multiple stands in BLAZE fixed.
+* Adjusted tuning parameters.
+* Added missing initializations of class member variables to class constructors.
+* Checks for ins-file settings moved to parameters.cpp.
+
+Benchmarks results:
+As compared to trunk r9957:
+* Crop global: All tables <<1% except: fire flux 1990-2000 C:+2%, N:+1%,
+  total period C uptake +5%, and regional firefluxes (region AUST +75%, 
+  other regions <=+/-10%)
+* Global PNV: All tables <<1% except: 
+  Cflux 1960-90 fire -3%, NEE -1%; Cflux1990-2000 fire -2%, NEE-3%,
+  total period C uptake -1%, maps biomes and fractional LAI max unaffected.
+* Panarctic, soil_temp, and wetlands*: only slight change or none at al. 
+  Paul okayed it.
+* Europe and small benchmarks: unaffected to any large degree.
+* No errors or warnings in logs.
+The crop global and global results are also very similar to the results
+of Lars' benchmark run x_larni/RUNDIR/BENCH_BLAZE/rt60_p15_05 on which was 
+based Lars' presentation in June for Ben et al of fire-region retunings 
+(during the branch fire_blaze_retune06 work).
+
+Branch history:
+Nothing to note.
+
+------------------------------------------------------------------------
+r9957 | johan | 2021-09-02 15:27:34 +0200 (Thu, 02 Sep 2021) | 36 lines
+
+Reintegrated branch release_finetunings (r9568-r9956): arctic- and europe instruction files, and crop senescence.
+
+Main contributors: Paul. (Stefan, Johan).
+
+Main changes (for details, see the log of the original branch):
+* Tuning in arctic.ins: ltor_max, greff_min, gdd5min_est in some pfts.
+* Change arctic.ins npatch from 5 to 15.
+  Removed npatch from panarctic/config/guess.ins, i.e. inherits from arctic.ins.
+  Soil_temp and Wetlands_* have their own specification of npatch.
+* Change europe.ins: greff_min of Bet_pen and Bet_pub changed to be consistent
+  with the change of IBS greff_min (0.135) in global.ins in earlier updates of
+  trunk.
+  N.B. europe.ins has not been retuned during the work with the retuning of the
+  model for release version 4.1. That will be done at a later point for a later
+  release.
+* Fix for crop senescence bug: Senescence is now done also during spin-up (but
+  only after the period without no N-limitation).
+
+Benchmarks results (as compared to trunk r9693):
+* Benchmarks that change output:
+    crop_global;
+    europe, diurnal_pristine_sites, pristine_sites, emdi_europe;
+    soil_temp, panarctic.
+* Benchmarks without changed output: crop_mixedsites, emdi_global, fluxnet,
+    global (PNV), and wetlands_*.
+* crop_global: Without the crop-senescence change, there were also NO changes
+  to model output in this benchmark.
+  Furthermore, the crop-senescence fix changes the output of ONLY the
+  crop_global benchmark, not other benchmarks, and only by tiny values.
+
+Output and/or input differences:
+None.
+
+Branch history:
+Created branch @9568 from trunk r9565.
+
+------------------------------------------------------------------------
+r9945 | johan | 2021-08-25 17:21:41 +0200 (Wed, 25 Aug 2021) | 48 lines
+
+Reintegrated branch tech_fixes (r9490 - r9943): Technical changes. Including Simba2 adaptations. 
+
+No change to model output.
+Changes from the branch Simba2 are included here: 
+from now on, trunk can run on New Simba without modifications.
+
+Main contributor: Johan
+
+Main changes (for detailed information, see commit messages in the originating branch):
+Technical changes to postprocessing, submit-related scripts, cmake (netcdf & minimal version), 
+cpp/h-file commenting, instruction-file commenting and -whitespace/tab corrections, 
+and an adjustment to a demo input-module warning message.
+E.g.:
+* Simba2 adaptations. (r9935-36)
+  Change of simba.tmpl from pbs to slurm, etc.
+  The SLURM submit script (the new simba.tmpl) is taken from aurora.tmpl.
+  The old PBS submit script is in a new file: pbs_legacy.tmpl, it will 
+  not be maintained.
+  Adaptations to the new simba.tmpl and to other files were done that were 
+  needed for the submit script and postprocessing to work well on server 
+  simba2; The other files were: scatter_plot.sh, and a small change in 
+  script benchmarks (only --mail-type).
+  These changes were developed in the branch simba2 (r8762-r9931) and
+  ported here.
+* The slurm log file extension changed from default (.out) to .log
+  in aurora.tmpl, gimle.tmpl, and simba.tmpl.
+* Removed exclusive flag from append script on aurora. (r9707)
+* Nprocess adjusted to hexacore on simba and icosacore on aurora in most 
+  benchmarks.
+* Change of cmake minimal version to 3.1. (r9934)
+* Cmake detection of netcdf and warning message when netcdf not found. (r9683,84,86,9879)
+* Removal of temporary files, and addition of -vert in calls to gmap and 
+  gmapall, in various benchmark postprocess.sh.
+Trivial changes:
+* Correction of warning message in demoinput.cpp. (r9661)
+* Added reference to Liu above ground biomass (as a readme file). (r9682)
+* Arctic Wetlands references moved from soil.h till soil.cpp. (r9876)
+* Instruction-file commenting and -whitespace/tab corrections.
+
+Output and/or input differences:
+None.
+
+Benchmarks results:
+No changes to model output (as compared to trunk r9693).
+
+Branch history: 
+Created from trunk r9275. Branch simba2 (r8762-r9931) was ported here @9935-36.
+
+------------------------------------------------------------------------
+r9693 | johan | 2021-06-15 16:18:00 +0200 (Tue, 15 Jun 2021) | 59 lines
+
+Reintegrated branch fire_blaze_retune06	(r9642-9692): alpha_a=0.6; combustible-litter factors; global npatch 15.
+
+Review of model output from trunk r9565 showed that alpha_a should be adjusted from 0.65 to 0.6 (e.g. because of the fix for max_n_storage in r9565), and that IBS greff_min is good at 0.135.
+As a result of the change in alpha_a, fire-tuning factors for litter-ready-for-combustion needed to be tweaked too.
+Also, because of BLAZE's sensitivity (in fire fluxes) to the number of patches, global.ins npatch was changed from 5 to 15.
+
+Main contributor: Lars
+
+Main changes:
+* alpha_a tweaked from 0.65 to 0.6.
+* tuned factors for litter ready for combustion (tuned to alpha_a=0.6, and with IBS greff_min 0.135).
+* global.ins npatch changed from 5 to 15.
+
+Benchmark changes:
+
+* alpha-a 0.65 --> 0.6 (greffmin IBS 0.135, these data obtained with npatch=5) (source: email Johan May 21)
+  global benchmark (PNV):
+  C npp: 66-->62 /68-->65  (1961-90/90-2000)
+  C fluxes: All fluxes -4--6%, except fire -14%!, and NEE -10% (same for total isoprene and monoterpene -7--9%)
+  N fluxes: fix -5%, fire -3%, leach +2%
+  Soil Nitrogen Fluxes: no changes
+  All pools: -6--9%; C pool Veg: 860-->790
+  Total runoff: -2%, 
+  Total-period C,N-uptake: -10,-7%
+  Biome distributions: subtle changes.
+  
+  crop_global benchmark:
+  C npp: 65-->61 /70-->65
+  C fluxes: same percent changes as in C fluxes as global-PNV: with the difference that the absolute 
+  change in NEE is neglible.
+  N fluxes: similar relative change to global-PNV execpt leach: fix -4%, fire -3%, leach +0%.
+  Pools as global-PNV above: all: -6--9%;   C pool Veg: 620-->566
+  Runoff: other direction of change than in global-PNV: +1,+2,+3%
+  Fire GFED regions with largest changes: EQAS, BONA, CEAM: -32%, -18%, -17%
+
+* npathes 5 --> 15  (source: email Johan June 01; same benchmark runs same as below)
+  BLAZE fire fluxes clearly changes when using 5 patches instead of 15.
+  No significant difference in the global table between 5 and 15 patches when all other factors are kept the same.
+  Biome distributions changes somewhat.
+
+* Tuned combustible-litter factors 
+  (these are results from Lars' bm runs on aurora (rt60_p15_05) as compared 
+   to trunk r9640 - a previous tuning of fire with alpha_a=0.65)(source: email Lars June 02):
+  crop_global benchmark:
+  Fire flux +~13%; establishment +~2.45%; larger NEE (1990-2000): -073 -> -0.84
+  Reduction of global terrestrial N uptake: pool/flux: -79%
+  Fire C-emissions: With the exception of Australia (a Eucalypt PFT might be necessary)
+  and Equatorial Asia (high fraction of peat and smoldering fires) the regional emissions are now as desired when comparing to GFED4.0. 
+  Global vegetation carbon stable at 564 Pg C
+
+  global benchmark (PNV):
+  Fire flux +~19%; establishment +~2%; 
+  Global vegetation carbon stable at 787 Pg C
+  maxLAI: slightly reduced BINE and IBS in Eurasia
+  Increased Temp/boreal mix at expense of temperate deciduous in Eastern Europa and NE USA. 
+
+Branch history
+Created from trunk r9640 @9642, and synced with trunk @9692.
+
+------------------------------------------------------------------------
+r9660 | johan | 2021-05-27 11:46:41 +0200 (Thu, 27 May 2021) | 3 lines
+
+Revert of previous commit r9659, which was committed to trunk by mistake.
+
+The change was intended for branch tech_fixes.
+------------------------------------------------------------------------
+r9659 | johan | 2021-05-27 11:41:08 +0200 (Thu, 27 May 2021) | 1 line
+
+Correction of warning message in demoinput.cpp
+------------------------------------------------------------------------
+r9640 | johan | 2021-05-24 18:34:40 +0200 (Mon, 24 May 2021) | 53 lines
+
+Reintegrated branch fire_blazewgen_tuneandfix (r9570-9622): e.g. tuning of fire-emissions and changed IBS greff_min.
+
+Main contributor: Lars
+
+Main changes (for detailed information, see commit messages in the originating branch):
+* Bugfixes and modifications to GWGen weather generator, 
+  plus retuning/Updates to BLAZE and SIMFIRE. r9574
+* Modified burned area outputs and cleaned up code. r9575
+* Use cmass_leaf_today() instead of cmass_leaf when combusting leaf-carbon, 
+  to account for the actual day's cmass_leaf. r9588
+* Refactoring of variable-names to comply to naming convention. r9618,r9606
+* IBS greff_min is changed from 0.120 to 0.135. r9574.
+  This last item is not related to the other changes here, 
+  but was included for practical reasons.
+
+Output and/or input differences:
+* aburned_area.out: contains actual burned fraction of gridcell as "BurntFr".
+* simfireanalysis.out: Added column "FireProp" that contains the average annual 
+  daily fire probability as copmuted by SIMFIRE.
+
+Benchmarks results from r9574, the IBS-greff_min change and the main BLAZE  
+retuning and weathergen bugfix (from branch bugfix r9551-3, which was presented  
+at a review 2021-04-14, compared to bugfix-branch r9503). 
+There are additional changes to the benchmarks results from the revisions
+of this branch after r9574, but these are not accounted for here.
+Crop_global:
+  C-fluxes: Decrease of Fire flux by about 7-10%; Change of Establishment  
+  by about -16%, LU_ch and Slow_h increased by about 20%.
+  C-Pools(1961-1990):
+    VegC:       543 -> 619 Pg (+14%); LitterC     259 -> 392 Pg (+10%)
+    HarvestSlowC: 7 -> 8.4 Pg (+21%); HarvestSlowN: +16%
+  Fire C emissions: Significant improvements in all GFED-regions except Australia.
+Global-PNV:
+  Fire-fluxes decreased by about 12%; Establishment decreased by about 17%;
+  Soil N-fluxes increased by 2-5%
+  C-Pools(1961-1990):
+    VegC:       735 -> 864 Pg (+18%)
+    LitterC     442 -> 496 Pg (+12%)
+  Base-runoff increased by 13% while Total runoff is reduced by -1%.
+  Biome-Distribution:
+    In Eurasia slight increase of Temperate deciduous at the expense of Temperate/Boreal Mix.
+    Slight increase of Temperate deciduous at the expense of Boreal evergreen in North America.
+    Globally slight increase of Xeric Wood/shrub.
+  Max-LAI distribution:
+    IBS has been reduced significantly in North-America, Asia, and Europe. 
+    BINE increased in North America and Asia, while TeBS now dominates Europe.
+  Isoprene and Monoterpene emissions-per-PFT have changed significantly acc. 
+  to altered Biome-distribution; Global total change between 1 - 2.6%
+
+Branch history: 
+Created from trunk r9565 @9570. The changes of r9574 was first made in branch 
+bugfix r9551-3 but was subsequently moved here. Synced with trunk HEAD r9621 @9622
+(getting the denitrification-function bugfix).
+------------------------------------------------------------------------
+r9621 | johan | 2021-05-10 14:16:58 +0200 (Mon, 10 May 2021) | 19 lines
+
+Reintegrated branch bugfix (r9619-9620): denitrification function bug fix.
+
+Contributor: Stefan
+ 
+Main change:
+A bug fix in the denitrification function and new parameters affecting the denitrification 
+changed due to fixing the bug.
+
+No changes to inputs nor to outputs.
+
+Benchmarks results: because this is an single bug fix in a specific feature, no benchmark run 
+was done. Potentially, its effects om global benchmark will be accounted for in the log 
+comment of a later revsion of trunk.
+
+Branch history: 
+Created from trunk r9565 @ 9619.
+This fix was initially committed to branch release_finetunings r9581,
+and later moved to branch bugfix @9620.
+
+------------------------------------------------------------------------
+r9565 | johan | 2021-04-22 18:36:50 +0200 (Thu, 22 Apr 2021) | 119 lines
+
+Reintegrated bugfix branch (r8549-9564): bugfixes for release 4.1.1-features, for max_n_storage, and for randfrac.
+
+This reintegration is an amalgam of what ideally should have been 2 separate reintegrations to trunk
+* Part 1: Revisions r8549-9457: Various bugfixes to the new features of release 4.1.1, and ditto technical fixes
+* Part 2: Revisions 9502, 9503: Bugfix max_n_storage and bugfix randfrac.
+Because of this, there are 2 separate sets of log messages in this commit. One for each of the above.
+For r9551-53, see section branch history.
+
+Part 1.
+Revisions r8549-9457: Various bugfixes to the new features of release 4.1.1, and ditto technical fixes.
+Contributors: Lars, Paul, Johan, David, Stefan, Mats, Adrian
+ 
+Summary of changes in r8549-9457 (see the original bugfix branch for details):
+
+ nitrogen transformations, Stefan
+ * Updated two parameters in nitrogen transformations to yield 
+   more reasonable global numbers on N2O emissions and nitrogen leaching. r8688
+
+ weathergen, simfire, blaze. Lars/Johan
+ * Added early initializations for weathergen and fix for e.g. roundoff for simfire. 
+   Partly from Stefan's branch bugfix_floatenv, r9457 
+ * Fixed out-of-bounds index issue in simfire_update_pop_density. r9324
+ * BLAZE fix for multiple stands mats r9223
+ * Code density in simulate_day(): added blank lines. r9267
+
+ arctic and wetlands, Paul
+ * Removed ice_fraction code from initial_infiltration (Mineral wetlands). r8673
+ * Removed ICE_IMPEDANCE and code associated with ice impedance.           r8672
+ * Fixed bug related to agdd0, Fixed latitudinal error as well, David, r8850,r8883,r8855
+ * Created two new functions, temperature_modifier and moisture_modifier, 
+   to tidy up and collect code relating to this functionality. r8674
+
+ technical lpj-guess model, Johan
+ * Fix for bug manifesting when running model with savestate 1 
+   and MPI installed and not using option -parallel. r8550 
+ * Removed soil member-variable whc_evap. Not used. Source: 
+   partly from Stefan's branch bugfix_floatenv and extended. r9456
+
+ benchmarks and submit templates, Johan
+ * Fixes for feature benchmark fluxnet by Adrian, r9300-1
+ * Slight change to multicore.tmpl: improved comment, and changed nprocess 15 -> 4. r9146
+ * Fix for bug causing error message from wetland_global/postprocess.sh r9271
+ * Added -vert to gmaps, along with a few other small fixes in postprocess in 
+   crop_global and global. In global, the title in biomes gmap was changed from 
+   Hickler et al. 2006 to Smith et al. 2014. r8887
+ * Updated benchmarking readme file. r8910
+ * Changed literature reference to the biomes gmap in report of benchmark global. r9016
+
+Output differences:
+* Columns added to seasonality.
+
+Benchmarks results, Johan:
+* Branch bugfix r9457, compared to trunk r9275: 
+  Global-PNV (% absolute numbers): large changes in global tables for N-fluxes (20%) and 
+  Soil N-fluxes (30%), moderate change in C-pool Litter (5%), and smaller changes in other 
+  C-pools, N-pools, C-fluxes, and Runoff (=<2%), except for C-flux estab (7-8%). 
+  Crop_global shows a similar pattern.
+  The biome distribution change in N Am is not as dramatic as it looks: it is a treshhold
+  passed by a small change that creates a shift in biome.
+* Most contribution to changes in report global tables comes from r8672-8688 of this branch.
+  These changes were reviewed at Developers meeting, Sept 2020 (r8694 vs trunk r8358).
+  Revisions after r8688 contributes only little (=<1%) to changes in most table values of 
+  crop_global and global-PNV (exceptions: global-PNV: C-flux fire -1.51%, and Runoff drain 
+  -1.77% (r9457 vs r8688, 1961-90)). 
+
+
+Part 2 
+Summary of changes from r9302 fix for the max_n_storage bug,
+and from r9503 fix for bug in randfrac() 
+(see the original bugfix branch for details):
+
+* Fix for the max_n_storage bug (r9502). This fix makes large changes in model output.
+  The fix lets leaf-dropping trees store more nitrogen (David, Develpers meeting 210216).
+  Kudos to Mats L who made the fix-patch as per instructions by David.
+  Changed files:
+  modules/cropallocation.cpp
+  modules/growth.cpp
+
+  The fix leads to biome shifts, which promted subsequent change in 
+  IBS greff_min from 0.12 to 0.135 (investigation by Stefan March 2021).
+  Because of svn-technical reasons, the change of IBS greff_min is not included here:
+  it will be included in a forthcoming branch.
+  
+  Benchmarks results (Johan): Difference to bugfix branch r9457 (i.e. part 1 above).
+  (i.e. same code but without the present fix):  
+  Benchmark crop_global (1961-90):
+  Cflux: Veg,Repr,Soil +3%; Fire,LUch,SlowH +(6-8)%; Nflux: fix +2%
+  Soil Nflux: all columns -(3-4)%; C-pools: +(3-15)%; +15%=Litter; N-pools: 
+  all columns +~2% except VegN. VegN:+12%!
+  Runoff <1% all columns; Cumulative uptake whole period: C: +6%, N: +4%
+  Benchmark global (PNV) biomes gmap, and benchmark panarctic gmap dominant pft by LAI:
+  Shift to more IBS in Europe (and N Am), and shift to more BNS (at the expence 
+  of grass) in mid northern siberia.
+  
+* Fix for bug in randfrac() (r9503). 
+  Fix by Phillip, Konstantin, and Ben Meyer.
+  The bug and the fix was presented by Phillip at Developers' meeting 2021-02-16, 
+  round-table), and was based on the original literature. Briefly, "a bug in the random 
+  number generator of LPJ-GUESS which leads to falsely generated numbers and to a very 
+  short period of the generated number sequence."
+  Changed files:
+  modules/driver.cpp
+
+  Benchmarks results (Johan):
+  The predominant changes compared to r9503 in crop_global global tables (1961-90): 
+  is C-flux fire +18% and -establ +4%; N-flux flux +3%; Veg and Litter C- and N-pools: 
+  -(2-4)%; and  full period uptake C: +3% and N: +14%. C-flux fire is much larger than 
+  18% in some GFED regions.
+  In benchmark global (PNV) the changes are very similar (Soil Nitrogen Fluxes show 
+  a slightly bigger negative change). 
+
+
+Branch history
+* Created from trunk at r8549 (from trunk 8538), and synced with trunk @9295 (getting r8877,
+  9264,9275 (features fluxnet, biomass, arctic_retuning)), and with trunk @9564 (getting
+  9491,9499).
+* The reverted revisions 9551-53 will be added to trunk via a separate branch instead of 
+  from this branch. So what actually is reintegrated to trunk is r8549-9503.
+
+------------------------------------------------------------------------
+r9499 | johan | 2021-02-18 12:23:07 +0100 (Thu, 18 Feb 2021) | 4 lines
+
+Revert r9491, which was committed to trunk by mistake.
+
+The change was intended for branch tech_fixes.
+
+------------------------------------------------------------------------
+r9491 | johan | 2021-02-12 15:00:42 +0100 (Fri, 12 Feb 2021) | 14 lines
+
+Changed CMakeList.txt for semi-automated finding of NetCDF library, plus added new warning message from cmake when not found.
+
+For a general system, an outcommented line for the user to modify.
+for aurora: automate finding the root path to NetCDF library etc.
+Also added (on Lars' request), an error message for cmake, when the library is not found by cmake.
+
+For the general system: The change assumes that an instruction text for the user be added in guessdoc.doc (written , will be added).
+
+The solution is based on Peter's suggestion set(CMAKE_PREFIX_PATH
+in combination with my own $ENV{EBROOTNETCDF}, which automatically gets the root path to netcdf library etc on an easybulid system.
+
+Test:
+The solution was tested for Cmake 3.12 on aurora, including a negative text, which ouputed the desired error msg.
+
+------------------------------------------------------------------------
+r9275 | johan | 2020-11-24 18:23:10 +0100 (Tue, 24 Nov 2020) | 34 lines
+
+Reintegrated branch arctic_retuning (r8573-r9272): retuning of arctic pfts. 
+ 
+Main contributors: Paul, Adrian, Jing, David
+ 
+Main changes (for detailed information, see commit messages in the originating branch):
+Instruction file settings
+* Updates to arctic.ins and wetlandpfts.ins based on tuning and evaluation for the Arctic benchmark. 
+* Slightly adjusted PFT parameters (Larch & shrubs)
+   Larch new (old): gdd5min_est 300 (350), phengdd5ramp 50 (100), 
+   greff_min 0.04 (0.09); PDS PFTs: gdd0_max 900 (500)
+* Update BVOC emission factors for PFTs in arctic.ins only. (Jing) 
+* Update MT fraction for LSS and SPDS. (Jing)
+* Tidied instruction files (Paul, Johan) 
+Bugfixes and other changes to the c++ code
+* Updated bug in soil code identifier for organic soils (was 7, should be 8) (Paul)
+* Bugfixes e.g. establishment bug, GDD0 bug (David)
+* Tests for 45N+ using the new PEATMAP peatland map               
+* Additions to Seasonality output (David)
+
+Changes to input/added inputs, and to output:
+* Panarctic Benchmark: Added treeline map (tree FPC) to postprocessing. 
+* Additions to Seasonality output (David) 
+
+Benchmarks results: 
+* Panarctic, wetland_*, soil_temperature och emdi_global:
+   * Satisfactory output.
+   * Improved vegetation performance (panarctic). Improvements to shrubs.
+   * C and N fluxes/pools are slightly affected.
+* Global values from benchmarks global (PNV) and crop_global (Johan) have 
+  not changed compared to r8694 (Developers' meeting Sept 2020).
+
+Branch history: 
+* This branch was created from trunk r8538 @8573.
+
+------------------------------------------------------------------------
+r9264 | johan | 2020-11-23 18:57:06 +0100 (Mon, 23 Nov 2020) | 37 lines
+
+Reintegrated benchmark_biomass (r8272-r9263): above-ground biomass in the crop_global benchmark.
+
+Main contributor: Lars
+
+Main changes (for detailed information, see commit messages in the originating branch):
+* Crop_global benchmark amended to include biomass.
+  Two biomass datasets have been added to the crop_global benchmark to evaluate LPJ-GUESS
+  biomass against global above-ground biomass and regional total biomass following Liu et
+  al. 2015 and Pan et al. 2011 respectively. 
+  Benchmark output:
+   * Liu above-ground biomass: difference plot "Modeled minus Liu et al. Above ground biomass"
+   * Pan regional biomass: Tabulated total values for specific regions
+ 
+Changes to input/added inputs, and to output:
+* Three new outputs (a gmap, a scattergram, and a table) 
+    added to benchmark crop_global. 
+* Biomass input files need to be supplied (Pan and Liu, respectively). 
+  They need to be located within subdirectories on the path of 
+  ${DATAPATH} specified in benchmarks/crop_global/postprocess.sh.
+  See the postprocess.sh script for the exact paths of the subdirectories.
+  Biomass input files: e.g. Global_mean_ABC_1993-2012_Liu2015_SI.dat. This file contains 
+  0.5 degree total above ground biomass averaged from 1993-2012. 
+* The plot of global GFED C-emissions was removed, because it posed no additional value. 
+
+Benchmarks results:
+* crop_global:
+   * Liu: The Liu above-ground biomass (AGB) benchmark shows a slight overestimation by LPJ-GUESS.
+     The RMS in the scatterplot is rather high, with 3.1, indicating that LPJ-GUESS simulates total 
+     global AGB fairly well while not necessarily its location. There is a tendency to overestimate
+     AGB in the tropics while it is underestimated in higher latitudes.
+   * Pan regional biomass:  The regional forest carbon pools are generally overestimated by LPJ-GUESS
+     by a factor of two globally.  
+* No changes to the other outputs of crop_global, nor to the other benchmarks.
+
+Branch history:
+* This branch was created from trunk r8241 @8272.
+
+------------------------------------------------------------------------
+r8877 | johan | 2020-09-16 19:22:00 +0200 (Wed, 16 Sep 2020) | 33 lines
+
+Reintegrated benchmark_fluxnet (r6611-8816): new flux benchmark replacing euroflux.
+
+Main contributor: Adrian
+
+Main changes (for detailed information, see commit messages in the originating branch):
+* Fluxnet benchmark added to the benchmarks suite (Adrian). 
+  This new benchmark replacing the old euroflux benchmark.
+* Minor change to benchmark report generator code (Johan, Lars), r8668-82,8816. 
+  Fix for embed flag erroneously being persistently on, 
+  and added embed flag to describe_images().
+  A change r8682 (Decreased the size of embedded plots so that 2 plots fit in one screen
+  height) was added and then removed r8816, because it crashes on the old Simba. Re-apply 
+  when old Simba has been decommissioned.
+
+Changes to input/added inputs, and to output:
+* Fluxnet input files need to be supplied. The existing instruction file parameter param 
+  "flux_dir" needs to point to them.
+* New input module added under benchmarks/extra_source and only used for the benchmark.
+  The new input module uses CRU data and corrects biases in climate variables with the 
+  fluxnet station data through the delta change method.
+* Sites were selected from the global Fluxnet gridlist, no sites with shorter than 
+  10 years of data were selected. 
+  Geographical distribution of sites have been considered, however with the previous 
+  constraint, there is still a bias in the gridlist towards Europe and North America.
+
+Benchmarks results (Johan):
+* No changes to the other benchmarks' output nor reports.
+
+Branch history:
+* This branch was created from trunk r6296 @6611. Last sync: trunk r8538.
+  A a point in the branch's history, changes from daily_grass were merged-in, 
+  but these changes were later removed.
+
+------------------------------------------------------------------------
+r8538 | johan | 2020-03-03 16:31:01 +0100 (Tue, 03 Mar 2020) | 30 lines
+
+Reintegrated branch fire_blaze_commenting_only (r8273-r8537): Commenting in code, and a fix for a compile warning.
+
+Mainly blaze-branch-related commenting, plus a general bugfix, and a general comment update.
+
+Main contributors: Lars, Stefan.
+
+Notes regarding Release version 4.1:
+* This commit is the codefreeze revision of the model code 
+  (there will also shortly be made tag of this commit,
+   svn://stormbringer.nateko.lu.se/svn/LPJ-GUESS/tags).
+* After code freeze, code commenting and post-processing and other support
+  functionality will be further updated, but not the model core code.
+* Documentation for the new features of Release 4.1 will be added after
+  the code free.
+
+Summary of changes in this commit (see the original branch for details):
+* General commenting + removed unused variables (Originally from branch bugfix r8450 and r8460). (Stefan, r...) 
+* Commenting to BLAZE, SIMFIRE and GWGEN (Lars, r8312-r8525)
+
+Benchmarks results (Johan):
+* Full benchmarks suite output: identical *.out files as compared to trunk r8390. 
+  This benchmarks run was done on the following code 'tech_codefreeze_draft r8481', 
+  which was a branch-off from this present branch fire_blaze_commenting_only at r8472,
+  and then patched with the 2 changes from bugfix branch.
+* Changes done after r8472 (r8523, r8525) was only in comment lines, and will not affect the output.
+
+Branch history:
+* Branch off from trunk r8390 at r8273. Patched at r8537 with all changes in branch bugfix (r8449-r8490).
+* Reintegrated to r8390. 
+
+------------------------------------------------------------------------
+r8390 | johan | 2019-12-12 17:16:09 +0100 (Thu, 12 Dec 2019) | 51 lines
+
+Reintegrated branch bugfix (r8251-r8378): various bug fixes to Release-4.1 model.
+
+Main contributors: Paul, Stefan.
+
+Notes regarding Release version 4.1:
+* This commit is finalizing the development of the model code for Release 4.1.
+* Small bugfixes might be added the coming month if any bugs are found, but, if so, 
+  they are expected to affect model output only to a minor extent.
+* See end of log message of trunk r8241 (feature nitrogen_transformations) for a review of 
+  main changes to trunk output introduced with the main features of version 4.1, and tuning.
+* A code-freeze of the Release 4.1 model core code will be done in the coming month.
+  Watch for upcoming tag (svn/LPJ-GUESS/tags) for that code-freezed code.
+* After code freeze, code commenting and post-processing and other support
+  functionality will be further updated, but not the model core code.
+* Documentation for the new features of Release 4.1 will be added at or after
+  the code free.
+
+Changes in this commit (see the original branch for details):
+Arctic & wetland feature:
+* r8252 Minor changes to lowshrun and prostratelowshrub (alpha_r) in arctic.ins
+  - improved establishment and therefore biomass and LAI of these PFTs.
+* r8363 Improved high-latitude peat C build-up.
+* r8378 Minor update to a peatland anaerobic decomposition.
+* r8290 Bugfix to restart from a saved state when peatland stands are enabled. 
+  Previously, saved Frac_water values were being reset to 0 in the first time step 
+  after a restart, causing mass balance problems.
+* r8325 Bugfix to peatland water uptake. Minor changes to the results. 
+  Bugfix to save state for peatland cells.
+* r8334 Added water balance check to irrigation. Removed double addition of 
+  irrigated water.
+Nitrogen-transformation feature:
+* r8255 Bugfix for N-transformations: removal of code for consideration of 
+  phenology == CROPGREEN etc.
+* r8296 N_transformations .cpp and .h, cleanup comments, etc.
+* r8311 Fix for imbalances experienced after restart. Also removed some obsolete code 
+  in ntransform.cpp
+Other:
+* r8302 Removed obsolete tmpl file alarik.tmpl; and (r8368, r8369) some obsolete comments.
+
+Benchmarks results (Johan, Stefan): this branch as compared to trunk r8241 (and r8278):
+* Global, Europe, *pristine_sites, emdi_*: No differences in out-files 
+* Crop_global: Practically no change in global pools and in C fluxes. N-fluxes: 8-10% 
+  increase in leaching and 2-4% decrease in atmospheric. Runoffs: only change in Base (-1%.).
+* Soil_temperature: only minimal changes.
+* Panarctic: Changes (e.g. from r8252) in e.g. PFT dominances (cmass, LAI), 
+  and C pools.
+* Wetland_global: 10-20% reduction in global CH4 emissions.
+
+Branch history:
+* Branch bugfix was created, branched off from trunk r8241 @8251 and synced @8279.
+
+------------------------------------------------------------------------
+r8278 | johan | 2019-11-06 17:45:44 +0100 (Wed, 06 Nov 2019) | 41 lines
+
+Reintegrated tech_fixes (r7816-8276): technical fixes to cf-input, .ins-files, compiler warnings, documentation.
+
+The changes may affect output when running with cf-input module. Otherwise not.
+
+Main contributor: Johan.
+
+Main changes (for detailed information, see commit messages in the originating branch):
+* Updated reference to externals guessnc from r3611 to r6470 thus adding new functionality 
+  for cf-input module (r7817).
+* Updated reference to guess_reference getting N-transformations documentation updates 
+  and updates in guess_guidelines (r7855).
+* Clean-up of the three main ins files, global.ins, europe.ins and arctic.ins: 
+  1. synchronizing them, replacing space with tab, cleaning up text, and moving lines to 
+     correct section (r8227-43,61,76).
+  2. Restructuring of .ins-files wrt output: Removed all non-standard .out-files, and  
+     reintroduced those needed for post-processing in the guess.ins files of benchmarks
+     (r8248,53).
+  3. Removing paths to fastarchive climate files in the *_cf.ins files (r8242).
+* Fixed warnings from x64 cfinput.cpp, library gutil, and cfvariable.cpp (r7860,r8212,67).
+* Blaze-related changes for netcdf input (r8249,64,68,74).
+* Unit-test cftime: fix for variable tm_isdst that was initialised to a value larger than 
+  one on newer linux (and possibly also windows) systems (r8203).
+* Change of namespace name in cru_ts30.cpp and related files (r7862). 
+* Other small technical changes (e.g. r7875).
+
+Changes to input/added inputs:
+* Restructuring of ins files wrt output: Removed all non-standard .out-files
+  from global.ins, europe.ins and arctic.ins and reintroduced those
+  needed for post-processing in the guess.ins files of benchmarks (r8248,53).
+
+  Global.ins, europe.ins and arctic.ins should have only standard out-files 
+  switched on (all others out commented), and output needed for benchmarks
+  should be switched on in the guess.ins file of the benchmark needing that 
+  output.
+
+Benchmarks results (Johan):
+* Full benchmarks suite output: identical *.out files as compared to trunk r8241.
+
+Branch history:
+This branch was created from trunk r7680 @r7816.
+
+------------------------------------------------------------------------
+r8241 | johan | 2019-10-28 18:48:52 +0100 (Mon, 28 Oct 2019) | 91 lines
+
+Reintegrated NITROGEN_TRANSFORMATIONS (r5914-r8240) + OVERALL COMMENT on features added since r7267.
+
+Main contributor: Stefan
+
+Summary of additions:
+* A more detailed formulation of nitrogen processes within the soil. NH4 and NO3 are now modelled 
+  explicitly together with the release of nitrogen trace gases.
+* Nitrogen leaching is now simulated for NO3 only. Due to this, the simulated N-leaching was 
+  reduced substantially,  which prompted for a change in how leaching was calculated in the model 
+  (added to trunk in an earlier separate commit r8182 "Reintegrated V4.1-RETUNED PARAMETERS").
+* Added a possibility to read manure fraction of total nitrogen addition from external file. 
+
+Output differences:
+* Two more files with N fluxes from the soil and N pools in the soil were added. Also added in this
+  version are two more columns in seasonality.out, GDD5 and tcmin_20 (minimum temperature for the
+  coldest month), these will make it possible to evaluate the establishment rules. The seasonality
+  file is now also outputted when runlanduse is set to false.
+* Daily climate is now added as an output table. Enable output by adding parameter file_daily_climate
+  in e.g. global.ins.
+
+Benchmarks results:
+* N leaching are lower than in r7680 due to the above mentioned change in formulation, from 60 to 
+  42 tgN/year.
+* Generally very small changes to non-N output.
+
+Branch history
+* Branched off from trunk r5857 @5914, synced with soil_forcing:5945-6965 @6969.
+
+Summary of Release 4.1: Overall comment on features added since r7267:
+* Arctic & Wetland (methane, soil); r7458
+* Blaze	(firemodel, correlated weather generator); r8182
+* Nitrogen transformations; this
+* Retuning of global and pft parameters (no tuning of pft parameters in europe.ins)
+* Landcover updates
+
+For this release version (4.1) a parametrisation was recently performed (see trunk r8182). The 
+parameters in the table below were varied together with turnoversap and distinterval (the latter
+two were not changed after the evaluation). 
+The aim of the calibration was to better represent biomes and biome shifts as well as global 
+numbers of e.g. NPP, NEE and fire emissions. N-leaching and N2O emissions were also considered 
+in the parametrisation.
+All features listed above, except Landcover updates, were part of the code base when tuning the 
+model. Details of each feature were then adjusted and debugged before each were separately 
+reintegrated to trunk.
+
+Changed parametrisation:
+- alphar (shade tolerant)		3 -> 2
+- alphar (shade intolerant) 		10 -> 11
+- greff_min (shade tolerant)		0.04 -> 0.03
+- greff_min (shade intolerant)		0.08 -> 0.09
+- alpha_a for N-limited PNV model	0.6 -> 0.65
+  This value is used for all stand types exept for cropland. 
+- alpha_a for N-limited cropland 	0.85 -> 0.9
+
+* No tuning was performed for the european PFT's. This will be made in a later stage.
+* For the artic benchmark (arctic.ins), the PFT parameters were changed like for the global.
+  In addition to these, the BNF parameters were changed from Conservative to Central, which resulted 
+  in an increase of simulated N-fixation from ~40 TgN to above 60 TgN per year.
+  We made the same change to the BNF parameters in artic.ins and europe.ins as in global.ins, which 
+  resulted in low C:N values in the european and panartic benchmarks. 
+  In a later stage, it should be considered whether or not to have separate values for these regions.
+
+Benchmarks results :
+* Below are differences compared to trunk r7680 (4.0 incl. Artic & Wetlands without the re-tuned 
+  parameters), the sources of deviations are hard to separate between the parameterisation, 
+  nitrogen_transformations and fire_blaze.
+
+* A better agreement with the sought-after biome distribution from Haxeltine and Prentice (1996) was 
+  observed after the introduction of BLAZE as compared to the parameterisation (r8185).
+
+* Due to changes in PFT parameters (see above), there was a change in simulated NPP for the period 
+  1990-200 from 59 to 66 PgC/year in the crop_global benchmark and from 63 to 69 PgC/year in the global 
+  benchmark.
+  The above mentioned change in NPP did not result in a major change in NEE for the same period (-0.75 
+  to -0.78 PgC/year), which mostly can be explained by a reciprocal change in Rh (45 to 52 PgC/year).
+
+* The above mentioned changes in PFT parameters also resulted in a better representation of biomes 
+  globally, especially the transition from the Kongo rainforest through the Sahel as well as the 
+  representation of a shift from savannah to rainforest in South America was improved. 
+  The representation of PNV for South Asia was also improved.
+
+* Global CH4 fluxes (wetland_global) are now (~175 TgCH4/year) closer to values reported elsewhere 
+  (~150 TgCH4/year).
+
+* Global fire emissions (crop_global) have been reduced to about 1.4 Pg C/yr. This is a slight 
+  underestimation against e.g. GFED 4 which is due to the lack of representation of peat-fires and
+  pasture burns in the tropics, specifically in Africa.
+	
+* A better agreement with the sought-after biome distribution from Haxeltine and Prentice (1996) was 
+  observed after the introduction of BLAZE as compared to the parametrisation (r8185).
+
+------------------------------------------------------------------------
+r8216 | johan | 2019-10-21 13:47:29 +0200 (Mon, 21 Oct 2019) | 84 lines
+
+Reintegrated branch FIRE_BLAZE_merge (r5985-8213): Fire-model BLAZE and Global WeatherGenerator.
+
+Main contributor: Lars
+
+Summary of additions:
+- The wildfire model BLAZE (BLAZe induced land-atmosphere flux Estimator, 
+  including the burned area simulator SIMFIRE) computing burned area 
+  on a daily basis and computing the fluxes between live- and
+  litter-pools and the atmosphere for C and N. 
+- The Global WeatherGENerator (GWGEN, Sommer et al.) producing correlated 
+  daily values from monthly input of:
+  - mean temperature
+  - daily temperature range
+  - precipitation
+  - solar downward short-wave radiation
+  - 10m wind (new)
+  - relative humidity (new)
+
+Changes to input/added inputs:
+* New meteorological variables relative humidity (or specific humidity 
+  and pressure) and horizontal wind.
+* Simfire input.
+* Benchmark crop_global postprocess.sh specifies path to observational 
+  fire data.
+
+Changes to Output:
+* 3 additional output files can be written
+  - monthly burned area
+  - annual burned area
+  - simfireanalysis with annual data: simfire_biome, max. Nesterov-Index, 
+    human population density
+* Benchmarks:
+  Crop_global:
+  - comparison of average annual C-emissions by fire (1997-2013, map) to GFED 4.0.
+  - comparison of average annual C-emissions by GFED-region (1997-2013, table) to GFED 4.0.
+  Global (pnv):
+  - A new map depicting the strength of dominance (in LAI) of the
+    dominant pft has been added.  
+
+Benchmark results:
+* An increase in the agreement with the sought-after biome distribution from
+  Haxeltine and Prentice (1996) was observed after the introduction of BLAZE
+  as compared to the parametrisation (r8185).
+* Crop_global:
+  In general, the global fire-emissions have been reduced to about 1.4 Pg
+  C/yr. This is a slight underestimation against e.g. GFED 4 which is
+  due to the non-representation of peat-fires and an underrepresentation
+  of pasture burns in the tropics, specifically in Africa.
+  Overall the global patterns are reproduced.
+* Panarctic:
+  A change in active layer depth (larger area with parmafrost) that is mainly
+  due to the change in wheather generator was observed. A similar change in vegetation
+  carbon was also observed, with lower values throughout the artic and sub-arctic area,
+  which then resulted in overall lower carbon pools.
+* Wetlands:
+  A similar change in response, as in panarctic, could be seen in the global methane 
+  emissions. The new results (~175 TgC CH4) are more in line with the observations
+  (~150 TgC CH4).
+
+Speed/performance:
+* The use of the weathergenerator GWGEN adds an approximate amount of 19% to a run 
+  using PNV only (global benchmark), and about 10% run-time to a run using crops 
+  (crop_global benchmark), respectively.
+
+Issues when updating:
+* A deviation by about 1% VegC (crop_global and global PNV) occurs when comparing 
+  to trunk r7818 with this trunk-revision (ver 4.1) with BLAZE and GWGEN switched off. 
+  The changes responsible have been applied to vegdynam.cpp and are mathematically 
+  consistent with the previous version. They have been approved on developers' 
+  meeting 2018-09-27. 
+* This branch has taken part in the global retuning for release 4.1 and therefore 
+  comparison with older versions of trunk should be viewed with caution.
+  For a comprehensive review of diffences in  benchmarks results between trunk v4.0.1 
+  vs the model after addition of 4.1 features and retuning of parameters, see the
+  commit message of the shortly forthcoming reintegration to trunk of branch 
+  nitrogen_transformations.
+* Documentation for the blaze feature branch in guess_reference will be added
+  in a later commit to trunk (then also documentation for Arctic & Wetlands feature
+  will be added).
+
+Branch history:
+This branch was created from trunk r5985. 
+Code from an older branch was added @5992.
+
+------------------------------------------------------------------------
+r8185 | johan | 2019-10-10 15:00:31 +0200 (Thu, 10 Oct 2019) | 59 lines
+
+Reintegrated bugfix branch (r7820-8184). Improvements to LC. Fixes of A&W, and tuning of CH4 emissions and arctic PFTs.
+
+Main contributors: Mats, Paul.
+
+Main changes (for detailed information, see commit messages in the originating branch)
+* Improvement of land cover area fraction balance and related (Mats, r8097,r8114,r8138).
+  See below for information how to use.
+* Moving conditionals for land cover and crop function calls from framework to functions (Mats, r7889)
+* Improvements and bugfixes to feature 'arctic physics and wetlands biogeochemistry' (Paul, r7822-r8101, r8177,84).
+  Importantly, this includes updating methane production parameters resulting from the tuning process (r7909).
+  The previous commit to trunk was the main result of said tuning process - if you want to revert that 
+  change to trunk, also consider this change here (r7909).
+  It also included general adjustments of arctic PFTs as a response to changes from the tuning process.
+* Seasonality is now standard output (Stefan, r8158,9)
+* General tidying (Johan, Paul, r8142,56,60-74).
+
+Important comments about improvement of land cover area fraction balance, and related:
+* Various fixes to improve land cover area fraction balance. (bugfix_lu r5701)
+  Most limits in conditionals and tests for area fractions are set by multiples of INPUT_RESOLUTION, roughly 
+  equaling the cut-off size of stand type fractions. This is derived from INPUT_PRECISION (number of decimals 
+  of input data) and INPUT_ERROR (number of decimals of deviation from 1.0 sum).
+  Since crop fractions are usually fraction of cropland, not gridcell, INPUT_PRECISION may have to be much 
+  higher (lower value) to include relative changes in crop fractions than the number of decimals in the input data. 
+  Disregarding small fractions will give small errors which will be reported in the log file. If INPUT_PRECISION is 
+  set too low (higher value), there will be problems in C and N balance. Each land cover data set should be evaluated 
+  for reasonable values. The default values (INPUT_PRECISION = 1e-14, INPUT_ERROR = 0.5e-6) are derived from the LUH2 
+  data and give similar limits in the code as before this update. The values can probably be raised to ignore 
+  ridiculously small areas, but the results should be evaluated.
+* Fix to avoid area shuffling between stand type within a landcover type when possible. (bugfix_lu r6994)
+  When transfers between two landcover types with multiple stand types occur, the code often solves the area balance 
+  by shuffling area between stand types within one land cover. To avoid artefactual wood cuttings when using e.g. normal 
+  crop stand types and several forest stand types, with this update this can be solved by using default crops. (set 
+  instruction file parameter frac_fixed_default_crops = 1 and e.g. TeWW and TeCo active).
+* Various small bugfixes for landcover change (and a few for general lancover)
+  (bugfix_lu 5704-5707,6076,6078,6083,6085,6314,6317,6985,6986,8119,8119,8120,8122,8123,8125)
+* Land cover change not allowed before soil pools have been resolved during spinup (bugfix_lu r6076).
+* Enabling direct use of landcover.ins without using crop.ins (r6986)
+
+Benchmarks results (Johan):
+  Differences r8158 (r8161 A&W benchmarks; r8174 soil_temperature) compared with trunk 7818 (untuned bugfix and untuned trunk):
+* No major differences in benchmarks except for panartic benchmark, and CH4 emissions (soil_temperature not compared).
+  The other benchmarks gave, and gmaps by-eye-neglible differences, and in tables, smaller abs differences than 1% often 
+  much smaller, except for a few figures in crop_global: C-fluxes 1961-90. NEE +9%, Harvest 3%; Nfluxes NEE 1961-90 -3%, 
+  1990-2000 -8%, leach -1.5 Harv +1.6.
+* The arctic and wetlands-related benchmarks (panarctic, soil_temperature,wetland_global, wetland_sites) displays changes, 
+  e.g.: strongly reduced CH4 emissions in e.g. wetland_sites benchmark, and changes to panarctic bm C pools and fluxes and 
+  PFT distributions. These changes are expected and represents the final tuned 4.1 version of the feature 'arctic physics 
+  and wetlands biogeochemistry'. 
+  Comparison with trunk r7818 was not considered useful here (comparison with retuned trunk r8182 would have been suitable
+  but was omitted because in interest of time). Instead see over all benchmark comment in shortly forthcoming reintegration to 
+  trunk of branch nitrogen_transformations.
+
+Issues when updating:
+* See the comments in the section "Issues when updating" i the previous trunk-commit r8182.
+
+Branch history:
+* Branch-off from trunk r7818 @7820. The change in benchmarks/crop_mixed_sites/config/guess.ins of this branch was obsolete and 
+  excluded from this reintegration to trunk.
+
+------------------------------------------------------------------------
+r8182 | johan | 2019-10-09 19:37:07 +0200 (Wed, 09 Oct 2019) | 64 lines
+
+Reintegrated V4.1-RETUNED PARAMETERS (r8044-r8181): main results of the retuning of LPJ-GUESS.
+
+Name of reintegrated branch: retuning4.1_finalresult (r8044-r8181).
+
+Main contributor: Stefan
+
+Main changes:
+
+* For the release version 4.1, a parametrisation was performed. 
+  The parameters in the table below were varied together with turnoversap and distinterval 
+  (the latter two were not changed after the evaluation). 
+  The aim of the calibration was to better represent biomes and biome shifts as well as global numbers of 
+  e.g. NPP, NEE and fire emissions. Also N-leaching and N2O emissions were considered in the parametrisation,
+  as well as fire and arctic-PFT distributions and -productivity and CH4 emissions (but these changes will  
+  be added to trunk separately: see branches nitrogen_transformations, fire_blaze_merge, and bugfix (A&W). 
+  They will be reintegrated to trunk shortly after the present one).
+
+Changed parametrisation:
+- alphar (shade tolerant)		3 -> 2
+- alphar (shade intolerant) 		10 -> 11
+- greff_min (shade tolerant)		0.04 -> 0.03
+- greff_min (shade intolerant)		0.08 -> 0.09
+- alpha_a for N-limited PNV model	0.6 -> 0.65   This value is used for all stand types exept for cropland. 
+- alpha_a for N-limited cropland 	0.85 -> 0.9
+  The C-only variants of the alpha_a constant were changed similarly.
+- nfix_a 				0.102 -> 0.234
+- nfix_b 				0.524 -> -0.172
+
+* A new CO2 file 1901-2018. It has only very small differences in CO2 as compared to the previous one.
+  E.g. 1975-2014 only 0.02% or less difference per year and only +1.3 ppm difference accumulated over the 40-year 
+  period.
+
+* A small change (part of larger commit r8103) related to feature nitrogen_transformations were added here to 
+  enable total switch off of the feature when going back to an earlier version of the model than 4.1 
+  (see last bullet of section "Issues when updating" below here and commit message of reintegration to
+  trunk of branch nitrogen_transformations, which will happen soon.
+
+
+Benchmarks results:
+* Since, in the parameterisation, also the new features fire model blaze and nitrogen_transformations were 
+  included in the model, the differences in model output between solely the present change and trunk has not 
+  been studied. Instead, see the commit message of the shortly forthcoming reintegration to trunk of branch 
+  nitrogen_transformations.
+
+
+Issues when updating:
+* IMPORTANT: The finalisation of feature branches arctic_and_wetlands, fire_blaze_merge, nitrogen_transformations, 
+  and bugfix branches, were done in parallel with each other and with the parameterisation done here. 
+  Therefore, trunk versions from r7458 and onwards cannot be expected to be stable, reliable, or fully tested. 
+  Contributions to the model from branches bugfix, fire_blaze_merge, nitrogen_transformations are required for the 
+  parameterisation of the present trunk-commit to be fully valid, and for the model to be stable and tested.
+
+* When updating your branch with the present trunk update, you will want to update at least also with the shortly 
+  forthcoming addition to trunk of branch bugfix (but probably also all of the branches in the bullet above), 
+  because it contains general adjustments of arctic PFTs and CH4 emissions as a response to changes from the 
+  tuning process of this present commit.
+
+* If in the future you wish to switch the model back to a version earlier than 4.1, in addition to switching off 
+  features not available in the the earlier model version, you will need revert the changes of this trunk-commit.
+
+
+Branch history:
+* Branched off @8044 from trunk r7818.
+
+------------------------------------------------------------------------
+r7818 | johan | 2019-07-13 18:38:50 +0200 (Sat, 13 Jul 2019) | 67 lines
+
+Reintegrated bugfix branch (r7099-r7813): new LU input correction; changes to output; various bug fixes.
+
+Main contributors: Mats, David, Johan, Paul.
+
+
+Summary of changes (for details, see the commit messagesfo the original branch):
+
+ Main feature:
+ * New correction method for inconsistencies between net land cover fraction 
+   and gross transition input. r7472 Mats
+ 
+ Additions related to main feature or to LU/LCC, etc:
+ * Correcting stand fractions so total sum is always 1.0.And fix 
+   active fraction division-by-zero problem. r7474,7 Mats
+ * Fixing printseparatestands option. r7480,r7584 Mats
+ * Fixing yield output. In case crop stands will contain several patches 
+   in the futureFixing yield output. r7478 Mats
+ * Changing stand-specific output file names to include the name of the 
+   stand type instead of land cover type. r7479 Mats
+ * Fixing height output problem when simulating multiple natural stands 
+   (landcover 1). r7100,r7579 Johan	
+ 
+ Arctic_and_wetlands feature corrections/improvements:
+ * Fixed arctic_and_wetlands restart bug. r7734, r7765 Mats
+ * Removed scaling of Natural fraction when Peatland is included. 
+   The fractions should sum to 1 in the input files. r7747 Paul
+ * Tidied up europe.ins by aligning and renaming some groups, 
+   and simplifying the grass groups. Removed some old comments. r7728 Paul
+ 
+ General bugs:
+ * Error in output. Accounted for cmass instead of nmass. r7289 David
+ * A new bug found hile working with the P cycle. r7285 David
+ * Bug in Individual::kill(). r7283 David
+ * Bugfix for erroneously too low C-to-N ratios in the respiratory function. r7228 Johan
+ 
+ Changes to output and general technical improvements (not affecting model):
+ * Added flux gmaps to benchmark global and crop_global. r7758,7782,7813 Johan
+ * Removed unnecessary Sompools pooltype LEACHED. r7276,r7561,r7726-7 David(Johan)
+ * Removed output (.out files), that are not routinely inspected, from the instructions 
+   files. Removed the ins-parameters for sdate.out and hdate.out from ins-files (there is 
+   no output code supporting them.). r7264,r7715,r7781 Johan
+ * Fixed some old commenting and added EOLs at EOF. No change of code. r7694,5 Johan
+ * Fixed years paths to co2 and cru data in _cru and _cf files in /data/ins/. r7376 Johan
+
+
+Benchmarks results (as compared to trunk r7680):
+
+Global tables (1961-90) show very small changes in absolute terms.
+In relative terms, C flux Establishment is reduced ca 10%  in benchmarks global (pnv) 
+and crop_global, and C flux Harvest is reduced 2.5%. (Est: -10% (-0.2% rel Veg) Harvest +2.5% (0.2% rel Veg))
+N flux leach is reduced 5%. All other fluxes changes <1%. 
+Pools and runoff: all numbers <1% relative change for global (pnv) and crop_global.
+Gmaps: Biomes and maxLAI - identical
+
+
+Changes to output:
+
+ * New gmaps in benchmark global and crop_global
+ * Reduction of number of out outfiles to save disk space when running and archiving benchmarks.
+ * Fix nmass (and cmass) error in output.
+ * Additions and changes to stand outputs.
+
+
+Branch history:
+
+* Branch bugfixes was branched off from trunk @7099 (r7068), and synced repeatedly.
+
+------------------------------------------------------------------------
+r7680 | johan | 2019-06-05 16:24:12 +0200 (Wed, 05 Jun 2019) | 36 lines
+
+Reintegrated branch arctic_and_wetlands_bugfix (2nd instance; r7549-r7663): some more small bugfixes to the A&W feature (trunk r7458)
+
+Addresses excessive warnings, a few unititialised variables, and a few issues with some benchmarks.
+
+Main contributors: Paul, Adrian
+
+Summary of changes (see the original branch for details):
+r7663	Emdi_global benchmark: Removed one measured reference data point for which we do not have soil information.
+r7662	Removed legend from postprocessing in panarctic benchmark
+r7660	Fixed oversensitive warnings from soilmethane module. Negative CH4 fluxes (i.e. UPTAKE of CH4) are allowed, 
+	but we should only flag them if they are clearly very large. 
+r7658	Added searchradius in benchmark Soil temperature.
+r7654 	Removed 'magic numbers' and increased maximum errors for warnings to be logged
+r7648	Fixes a bug giving valgrind errors, and suppressed warnings by introducing verbosity parameter. 
+	So far only implemented in soilmethane module.
+r7636	Missing initialization of 2 variables in Soil::hydrology_peat()
+r7586	Changes of paths: to new files on Simba for the landuse benchmarks. E.g to include a peatland column 
+	(that file however is not based on is not based on the "less_PNV" file).
+
+Benchmarks results:
+All benchmarks reports (i.e. report tables, gmaps, and plots) except global showed identical, or near identical output, as compared with trunk r7458.
+Benchmark global: 
+Global tables showed minute differences to trunk r7458 in  (largest: N-NEE -0.04%, total fluxes fluxGtN -0.07%.)
+Gmaps showed small changes in a few pfts: C3G, C4G and IBS: LAI and Cmass minute differences while C-to-N ratios a bit larger, but then only localized to a few areas such as e.g. Sahara. Also minute differences in some other pfts but much less than C3G, C4G and IBS. 
+Because of time constraints, crop global benchmark was run with a reduced gridcells (the random1600 set): tables showed only very small differences as compared with trunk r7458. 
+
+A few things remains to be fixed:
+ * Newly introduced function isNumber() is not backcompatible to older compilers.
+ * There are still a few warnings from the soilmethane module: warning thresholds may need further adjustment.
+ * Documentation of the arctic_and_wetlands feature will be added to trunk at a later time point.
+
+This branch has addressed specific bugs from the arctic_and_wetlands feature in trunk and its benchmarks. Therefore it has not been extensively tested for other aspects in the reintegration checklist. Because several more features are planned to be added to trunk in the near future, it was preferred to get these fixes into trunk asap to enable for subsequent branches to sync these fixes in from trunk.
+
+Branch history:
+arctic_and_wetlands_bugfix was branched off from trunk r7543 @7549.
+
+------------------------------------------------------------------------
+r7543 | johan | 2019-05-14 18:35:25 +0200 (Tue, 14 May 2019) | 12 lines
+
+Reintegrated branch arctic_and_wetlands_bugfix (r7459-r7506): small bugfixes to the A&W feature (trunk r7458)
+
+Main contributors: Adrian, Johan
+
+Summary of changes
+* global.ins: ifdroughtlimitedestab 1 -> 0
+* europe.ins: reinstated outcommented harv_eff 0 and res_outtake 0; added root_beta 0.9683 to pft "Pic_sit"; change of filename for file_msoiltempdepth25.
+* emdi_europe benchmark: fixed bug that prevented build
+
+Benchmarks results:
+Minute changes to benchmarks global and europe report C- and N- pools- and flux- tables: most columns 0.0% difference as compared to trunk r7458. The few columns that have a difference differ by max (abs) 0.04%: e.g. -0.04% in NEE of Global Terrestrial Nitrogen Fluxes.
+
+------------------------------------------------------------------------
+r7458 | johan | 2019-04-23 14:48:43 +0200 (Tue, 23 Apr 2019) | 105 lines
+
+Reintegrated arctic_and_wetlands branch (r7447-r7457) (aka tech_soil branch (r4749-r7446)): high latitude & wetland developments, CH4 emissions, new soil texture input.
+
+Arctic_and_wetlands/tech_soil is feature branch for high latitude and wetland developments,
+including methane emissions and updates to soil texture input.
+
+Main contributors: Paul Miller, Adrian Gustafson, Stefan Olin.
+
+Summary of additions:
+* For the main references, please see: soil.h and soilmethane.h.
+* Soil class - introduced to store soil temperature and water content (wcont) in 15 10-cm layers.
+* Soil temperature - numerical calculation that used includes phase change, with explicit active layer depths.
+  Soil water below the wilting point can be frozen. Padding layers below the soil layers. Largely follows Wania et al. (2009a).
+* Soil properties - each layer's physical properties (thermal, hydraulic, porosity) can be scaled between
+  mineral and organic by setting iforganicsoilproperties.
+* New soil input module - reads more detailed soil properties from textfile via the new soilinput module,
+  instead of soil-code lookup table. This was developed in branch soil_forcing (r5945-r6299).
+* Snow - simple, fixed-density multilayer snow scheme used in soil temperaure calculations. Results in warmer winter temperatures.
+* Hydrology - same algorithm as Gerten et al. (2004) but updated to take into account the 15 soil layers, and called as a Soil class method.
+* Instruction-file pft parameter greff_min of IBS was changed from 0.08 to 0.12.
+* Peatland gridcell fraction used if ifpeatland set in landcover.ins and land use file column exists.
+* High latitude PFTs - tall and short shrubs (evergreen and deciduous), and low tundra PFTs, follow Wolf et al. (2008).
+* High latitude peatlands - follow the same hydrology as described in Wania et al. (2009a, 2009b).
+  Water table fluctuates in the acrotelm (top 30cm) and the bottom 1.2m is assumed to be saturated.
+* High laitude peatland PFTs - graminoids, mosses and low shrubs (evergreen and deciduous),
+  with inundation and water table restrictions on their productivity following Wania et al.,
+  and send to photosynthesis in the PhotosynthesisStresses structure.
+* Global wetlands - two new wetland grass PFTs.
+* Methane - High latitude methane emission fluxes and pathways follow Wania et al. (2010).
+* Methane - Other methane emission fluxes, e.g. tropical, follow Spahni et al. (2011)
+  and are calculated using a simple scaling of heterotrophic respiration.
+* New benchmarks - panarctic, soil_temperature, wetland_global, wetland_sites.
+
+
+Switches:
+* New features activated or otherwise using the following switches in the global or arctic instruction files:
+  iftwolayersoil 0		! Use the original LPJ-GUESS v4 soil scheme, or not. If true, override many of the switches below.
+  ifmultilayersnow 1 		! 0 is the old, single-layer scheme. 1 by default
+  ifinundationstress 1		! whether to reduce GPP if there's inundation (1), or not (0)
+  ifcarbonfreeze 1		! Whether to limit soilC decomposition below 0 degC in upland soils (default, 1), or not (0)
+  wetland_runon 0		! Extra daily water input or output (mm/day) to wetlands. Positive values are run ON, negative run OFF.
+  ifmethane 0			! Whether to run the methane model (for peatland only)
+  iforganicsoilproperties 0	! Whether to update soil properties using soil carbon (for non peatland, mineral cells, soilcode != 8)
+  ifsaturatewetlands 1		! Whether to take water from runoff to saturate low latitide wetlands (1), or not (0)
+* To revert to the trunk r7265, set instruction file setting iftwolayersoil to 1, and set instruction-file pft parameter greff_min
+  of IBS back to 0.08.
+
+
+Outputs:
+* Possibility to output annual and monthly grouped outputs.
+  To enable, add the following lines to the instruction script (or uncomment if already present)
+
+  file_msoiltempdepth25 "soiltemp25cm.out"
+  file_mch4 "mch4.out"
+  file_mch4diff "mch4_diffusion.out"
+  file_mch4plan "mch4_plant.out"
+  file_mch4ebull "mch4_ebullition.out"
+  file_msnow "msnowdepth.out"
+  file_mwtp "mwtp.out"
+  file_mald "mald.out"
+  file_wetland_water_added "wetland_water_added.out"
+
+
+Benchmark results with feature off (iftwolayersoil 0, IBS greff_min 0.08)
+* All benchmarks very similar to previous trunk (global pnv tables values within 1%). Some scatter due to stochasticity.
+ 
+Benchmark results with feature on (as compared with trunk r7267):
+* General observation: expected changes to N mineralization in high latitudes. Fire fluxes affected by soil water unavailability at high latitudes.
+* Global benchmark: small differences in global C & N pools and fluxes, and runoff. Slightly more N leaching
+* Global benchmark: small differences in dominant PFTs, with the main difference being more IBS at the expense of BNE/BINE,
+  even after a slight increase of greff_mort for IBS in global.ins and arctic.ins. 
+* Crop global benchmark: small differences in global C & N pools and fluxes, and runoff. Slightly more N leaching
+* Europe benchmarks: small differences, mainly due to Betula spp. (IBS PFT). 
+  N.B. the european benchmarks were run with rootdistribution "fixed". Setting rootdistribution later has been changed to "jackson" (r7457).
+  Benchmarks were not rerun because of time pressure. Because of this change, retuning of european pft settings may be necessary.
+* All other benchmarks similar to trunk.
+
+New Benchmarks - result summary:
+* panarctic: Active layer depths very reasonable (compared to CALM and a global ALD map).
+* panarctic: Too much grass relative to shrubs, so returning will be necessary.
+* soil_temperature: much improved seasonal soil temperatures as compared to a dataset of observations.
+* wetland_global: Global CH4 fluxes are slightly high, at 269 TgCH4/year. Returning will be necessary.
+* wetland_sites: similar site-based CH4 flux performance to Wania et al. (2010).
+
+ 
+Issues when updating:
+* The Soil class implementations have been moved to soil.cpp and soilmethane.cpp. Its declations are still in guess.h.
+* Soil properties is no longer read from the cru fastarchive binary. It is instead read from textfile via the new soilinput module:
+  textfile can either be the lpj_soils.dat (located in the svn repository /data folder) or a text file with the following columns:
+  lon, lat, clay, silt, sand, orgC, CN, pH, cellfraction.
+* New benchmark files were added, as well as instruction files for peatland and arctic pfts.
+* Documentation (e.g. guessdoc.doc, scientific_description.docx) for the feature is not included in the present reintegration.
+  It will be added to trunk at a later point.
+
+  
+Branch history:
+* The feature was developed in tech_soil branch (r4749-r7446)
+* Immediately before reintegration to trunk, the soil_tech code was transferred to new branch arctic_and_wetlands (r7447-r7449),
+  which in turn was reintegrated to trunk (this commit). This transfer was done to get rid of svn:mergeinfo inconsistencies.
+  All tests incl benchmarks referred to above were performed on the soil_tech branch.
+  The codes in the two branches are identical to each other, except for change of rootdistribution from 
+  "fixed" to "jackson" in europe.ins which was done in branch arctic_and_wetlands. 
+* Branch tech_soil was branched off from trunk r4726. 
+* Branch tech_soil was synchronised continously with trunk, last trunk revision being r7267.
+* Branch soil_forcing (r5945-r6299) is reintegrated to trunk as part of the present branch rather than on its own.
+  It was merged into this branch (tech_soil) @ r6301. 
+------------------------------------------------------------------------
+r7267 | johan | 2019-02-08 17:03:07 +0100 (Fri, 08 Feb 2019) | 24 lines
+
+Reintegrated tech_photosynthesis branch (r7170 - r7266): technical change of photosynthesis(). Not affecting results.
+
+Main contributor: Paul; Slight amendments: Johan; Code review: David
+
+Summary of changes:
+* Updates to  photosynthesis() function header to receive the new structs PhotosynthesisEnvironment and PhotosynthesisStresses.
+Some of the photosynthesis() function parameters were moved into these new structs. See the function comment in the code to see to which struct each parameter was moved. 
+
+The rationale for this change is to keep the number photosynthesis-function parameters down, because we expect that the number of variables to be passed to the function will increase in the near future.
+
+IMPORTANT for users adding new call parameters to photosynthesis() function header: from now on:
+Never place new call parameters in the photosynthesis()-function header proper, instead
+place new variables to be passed to photosynthesis() inside the structs PhotosynthesisEnvironment and PhotosynthesisStresses,
+or in PhotosynthesisResult, if it is a result.
+
+Benchmarks results:
+* Benchmarks output is identical to trunk r7068; as well as deltareports (crop_global, global, europe, no differnces); and all reports showed ok output. Benchmark tests were done with this branch merged with tech_fixes and then compared with trunk-r7068 output. 
+
+Issues when updating:
+* The photosynthesis() function header has been changed. See Summary of changes above. Input variables to photosynthesis() need to be set using setter methods of the new structs before calling photosynthesis().  
+  
+Branch history:
+* Branch tech_photosynthesis was branched off from trunk r7068 @7169; synced w trunk r7265.
+
+------------------------------------------------------------------------
+r7265 | johan | 2019-02-08 15:55:08 +0100 (Fri, 08 Feb 2019) | 31 lines
+
+Reintegrated tech_fixes branch (r6445 - r7243): technical fixes. Not affecting results.
+
+Main contributor: Johan
+
+Summary of changes:
+* r7243 Updated path to LPJ-GUESS download page in readme_guesswin.txt.
+* r6797 Updated link to /guess_reference/ to its latest revision: changeset r6237-r6673 in guess_reference/; 
+  - Changes only to file /guess_reference/guessdoc.doc. (how to run guesscmd.exe with demo input from a DOS window.)
+* r6796 Integrated branch tech_x64 (r6308-6428): Fixes for some of compile-warnings for x64, and for eof-newlines in x86.
+  - Warnings from e.g plib and gutil remains.
+* r6763 Slimmed fix of grass-age bug, in get_stand_age_structure(), commonoutput.cpp; 
+  aka bug preventing grass pft before tree pfts in instruction file.
+  - For an explanation of the bug and this fix, and verification runs, 
+    see commit message for this revision in branch tech_fixes. Briefly, the fix has been verified to 
+    prevent runtime crash on Windows with 20 gridcell locations, and europe.ins/europe.ins. 
+    And also, on aurora, crop_global benchmark with a full-global gridlist. 
+* r6738 Fixes in submit script, mainly for the append functionality (memory error on aurora and queue time), 
+  and additionally for --bind-to.
+* r6737 Fix for output_vegetation generating a temp-file that is unnecessary in commandline mode.
+  - Addresses problem that output_vegetation produces a file not relevant for the commandline version.
+    That the file was opened/closed many many times during a run created problems in some HPC systems.
+  - For an explanation of the bug and this fix, and verification runs, see commit text for this revision in branch tech_fixes.
+
+Benchmarks results:  
+* Benchmarks output is identical to the output from trunk r6296, and reports are identical (crop_global, global, europe).
+* Benchmarks output when comparing with trunk r7068: output is again identical, and deltareports (crop_global, global, europe)
+  show indicates identical output as well. This latter test was done with this branch merged with tech_photosynthesis 
+  and compared with trunk r7068. This validates revision r7071 of this branch: sync with trunk r7068.
+  
+Branch history:
+* Branch tech_fixes was branched off from trunk r6296 @6445; and synced with trunk r7068.
+------------------------------------------------------------------------
+r7068 | johan | 2018-10-26 15:08:09 +0200 (Fri, 26 Oct 2018) | 42 lines
+
+Reintegrated bugfix branch (r5889 - r7067): various bug fixes to model and to post process.
+
+E.g. negl densindi; Eq. 15, Olin 2015; age_limit_reduce value; post process: units and biome map.
+
+Main contributors: Michael, Mats, Johan, Stefan
+
+Summary of changes:
+* r7042 Fixing accidental occurrences of ',' where '.' was intended in cropallocation.cpp, did not affect results (Mats)
+* r7041 Bugfix in init_stand_lu() (Mats)
+* r6764 Improved value for landcover instruction-file parameter age_limit_reduce (Mats)
+* r6593 Removed small piece of debug dummy code
+* r6579 Fixed bug in biomes postprocess: typo in rules. Fix causes some change in global biomes map (pointed out by Peter Anthony)
+* r6578 Postprocess: wrong unit for global npools corrected: per ha to per m2. Also: cosmetic Tg to Pg.
+  - the error was introduced when changed units for N-fluxes in r5506
+* r6039 Fixed bug in implementation of Eq. 15, Olin 2015
+  - changed to squared f2 instead of incorrectly cubed (pointed out by Sam Rubin)
+* r5897 Fix occasional negligible densindiv bug (Michael)
+  - manifested under non-stochastic conditions
+  - was not reproducible at every run of current migration branch
+
+Benchmarks results (Johan):
+* Differences as compared with trunk 6296 in Benchmarks reports tables:
+  Differences only in benchmarks crop_global and crop_mixed_sites. The other benchmarks unaffected.
+  crop_global: ca 1% difference in slow_h and NEE in global terrestrial carbon and nitrogen fluxes and pools 1961-1990, a bit less in LU_ch and fire. 
+  Otherwise very small differences, except for 5-6% difference in global C & N uptakes 1901-2006.
+  The major contributor is probably the changed age_limit_reduce (r6764). 
+  Differences contributed to above fluxes and pools from f2-bugfix, and fix negligible densindiv 
+  give very small differences in global total numbers of crop_global: 
+  in most cases <<0.1%. Harvest C flux ca 0.1% decrease. NEE C flux affected ca 0.1%.  
+  Apparent large difference in global nitrogen pools are because of output differences (changed unit): see that section below.
+* Fix for the bug in postprocess biomes rules causes some change in global biomes output (benchmark global (pnv)).
+  The fix changes the biomes in e.g. China, eastern USA, southern eastcoast Australia, etc.
+  The new output global biome map (global benchmark, r6296 fixed, as compared to trunk r6296) has been okeyed by David, Stefan and Ben.  
+* r7041 could produce different results with crop rotations, not tested here.  
+
+Output differences:
+* global npools units changed from per ha to per m2.
+* Also, cosmetic Tg to Pg, also in global npools table, in order to match cpool table unit and values.
+
+Branch history:
+* Branch tech_fixes was branched off @5889 from trunk r5857, and @6799 synced with trunk getting r6296. Sync @7067 was only mergeinfo.
+ 
+------------------------------------------------------------------------
+r6296 | johan | 2017-09-20 16:00:36 +0200 (Wed, 20 Sep 2017) | 26 lines
+
+Reintegrated tech_bvoc branch (r4895 - r6240), feature branch for monoterpene speciation.
+ 
+Main contributor: Stijn Hantson.
+ 
+Summary of additions:
+* speciated monoterpenes are now calculated
+* monoterpene storage fraction now depends on monoterpene species
+* nine different monoterpene species are considered which are merged in two groups: endocyclic (TM1) and rest (TM2).
+* over Europe, only values for these 2 groups are available.
+ 
+Outputs:
+* possibility to output annual and monthly grouped outputs.
+  To enable, add the following lines to the instruction script (or uncomment if already present)
+  file_amon_mt1  "amon_mt1.out"    !Annual endocyclic monoterpene emissions output file
+  file_amon_mt2  "amon_mt2.out"    !Annual other monoterpene emissions output file
+  file_mmon_mt1  "mmon_mt1.out"    !Monthly endocyclic monoterpene emissions output file
+  file_mmon_mt2  "mmon_mt2.out"    !Monthly other monoterpene emissions output file
+ 
+Benchmark’s results (with monoterpene species output turned off) as compared with trunk r5857:
+* Global benchmark: very small differences in global total monoterpene emissions. 
+  All other output identical with previous trunk revision.
+* Crop_global benchmark: very small differences in global totals (sums) of monoterpene emissions, 
+  and in global total isoprene emissions. Global isoprene emissions, however, display a small change
+  in crop_sum due to significant change in TeCo and Tecoi columns. 
+  All other output identical with previous trunk revision.
+* Europe benchmark: no differences.
+------------------------------------------------------------------------
+r5903 | mischa | 2017-04-24 19:33:38 +0200 (Mon, 24 Apr 2017) | 2 lines
+
+Revert r5901
+
+------------------------------------------------------------------------
+r5901 | stefan | 2017-04-24 18:14:44 +0200 (Mon, 24 Apr 2017) | 1 line
+
+re-creation of soil_ntransformations
+------------------------------------------------------------------------
+r5857 | johan | 2017-04-05 15:04:09 +0200 (Wed, 05 Apr 2017) | 49 lines
+
+Bugfixes to RELEASE 4.0: unbalanced N-pools in C-only mode; RCP-scenarios N-deposition input; CFT-BVOC parameters.
+
+Changes:
+
+Fix for nitrogen pools not being balanced when running in carbon-only mode.
+ To conserve nitrogen balance even when nitrogen limitation on photosynthesis and decomposition is turned off, the following had to be changed.
+ * optimum leaf nitrogen content still needs to be calculated even without nitrogen limitation on productivity. If nitrogen uptake can’t meet the nitrogen demand, there is still no limitation on productivity.
+ * if soil nitrogen immobilisation exceeds available nitrogen, decomposition rates aren’t decreased. Affected SOM pools C:N ratios are instead adjusted to meet nitrogen deficiency.
+	   
+Bugfix for bug, introduced in release version 4.0 (when adding N-deposition after 2008), causing RCP-scenarios to start one decade too late, and intervening decade to be read from from historic only.
+ * Reverted the changes of trunk r5511 (cruncepv7-branch r5338, r5380) in lamarquendep.h and GlobalNitrogenDeposition.h, as well as the change in param "file_ndep" in paths.ins of trunk r5511, back to trunk-4726 versions.
+ * Specified mandatory loading of RCP60 GlobalNitrogenDeposition data in the CRU-NCEP input module (cruinput.cpp). RCP is invoked starting 2000, and the decade 2000-2009 is average between Historic N-deposition and RCP6.0.
+ 
+Addition of missing cft-bvoc parameters.
+ Missing instruction-file parameters caused wrong bvoc output. Added parameters to crop.ins (values taken from global.ins group "C3G" and group "C4G") and amended column widths. 
+ 
+Additional technical fixes: memory-releasing fix, doxygen.
+ 
+Benchmark output changes:
+ In nitrogen-limited mode: benchmarks global and europe: all output for years 1901-1999 identical as compared with trunk r5511. Output of later years change due to change in nitrogen input; benchmark crop_global: Output changes in bvoc-related files as compared with trunk r5511.
+ Carbon-only: When global benchmark were locally modified to run in carbon-only mode, global carbon pools changed only slightly (for pool sizes, see archive on Stormbringer:~joe/benchmarks_archive), while nitrogen pools changed as expected significantly, as compared with trunk r5511. 
+
+Changes to output format: 
+In crop mode, changed landcover-column widths in files nmass.out, nlitter, nuptake,out, cton_leaf.out.
+
+Issues when updating: 
+Users of the GlobalNitrogenDeposition binary on HPC resources Simba and Aurora should be aware that the nitrogen-deposition input data for decades 2000 and 2010 changes when changing from trunk r5511 to this revision.
+
+
+***** Summary of all changes in release 4.0 (r5506-11) and this bugfix (r5857), as compared to previous trunk (r4726): *****
+
+Summary of changes: see the commits to trunk of the individual branches cruncepv7 (r5508), bugfix (r5507), tech_benchmarks (r5506), and above. 
+
+Benchmarks results:
+The global- and crop_global-benchmark reports' global averages are reasonable, both with Nitrogen limitation and Carbon-only mode (however, for nitrogen numbers of the latter, see above log text of the present revision (r5857)).
+* Contributions from cruncepv7 branch:
+  Change of forcing, and in addition change of const alphaa{,_nlim,_crop,_crop_nlim}, gives differences as compared to cruncepv5 benchmark results.
+* Contributions from bugfix branch (r5507):
+  Changes in bvoc.cpp and corrected leaching function: gives significant effect on isoprene/monoterpene emissions, npp and other output. The other changes affect output very little.  
+* Contributions from tech_benchmarks branch:
+  Benchmark report changes w.r.t. units for some outputs.
+* Contributions from current revision: see top of this log message.
+
+Issues when updating with earlier revisions:
+* Since version 3.1: Two files have been replaced (cru_1901_2006.h, cru_1901_2006misc.h; cruncep_1901_2013.h, cruncep_1901_2013misc.h) with files with different file names.
+* Before updating (syncing) changes from trunk r5507 to your branch, it is advised to replace "out.add_value(" with "outlimit(out," in files commonoutput.cpp and miscoutput.cpp in your branch (and commit it), in order to reduce conflicts when merging.
+
+Branches history:
+* cruncepv7 (r5176 - r5381), bugfix (r4995 - r5498), tech_benchmarks (r4719 - r5442), bugfix (r5519-5856)
+------------------------------------------------------------------------
+r5511 | johan | 2016-12-09 11:25:49 +0100 (Fri, 09 Dec 2016) | 6 lines
+
+RELEASE 4.0 releasenotes.txt and readme.txt
+
+These releasenotes.txt are summarizing the changes of all additions to the trunk since r3668, i.e. since release 3.0.
+
+The readme.txt file has been updated with regard to the change in climate (CRU-NCEP) and benchmarks.    
+
+------------------------------------------------------------------------
+r5508 | johan | 2016-12-08 18:50:55 +0100 (Thu, 08 Dec 2016) | 15 lines
+
+Reintegrated CRUNCEPv7 branch (r5176 - r5381): change of forcing dataset (from cruncepv5 to cruncepv7cruP) 
+
+  - Change of forcing dataset from cruncepv5 to cruncepv7cruP, with resulting changes to 
+    FastArchive header files, and to input model. 
+    N.B. the file name cru_TS30.cpp/.h and namespace CRU_TS30 was kept because of svn reasons, 
+    although the forcing data is not CRU-TS.
+  - Values in CRU_NCEP FastArchive files stored as decimal numbers at suitable 
+    precision.
+  - Interim CRU_NCEP dataset for 1901-2015 substituted with CRU precipitation 
+    for all but the last year due to issues with currently available release 
+    of CRU_NCEP. Care is advised in interpretation of simulation results for
+    2015 due to a potential discontinuity in precipitation at the start of this 
+    year. 
+  - Reminder: since r4866, longitude/latitude coordinates in gridlists and data files should now be assumed 
+    to refer to grid-cell centre, instead of south-west corner.
+------------------------------------------------------------------------
+r5507 | johan | 2016-12-08 18:24:04 +0100 (Thu, 08 Dec 2016) | 13 lines
+
+Reintegrated bugfix branch (r4995 - r5498): Bugfixes to e.g. leaching, eet, BVOC; Support for new graphical shell; Improved LU/LCC, Forestry.
+
+Summary of changes:
+ * Addressing various bugs, e.g.:
+   - Change to eet affects output in polar regions.
+   - Change to leafT() affects isoprene and monoterpene emissions.
+   - Further small bugfixes and technical improvements. See individual commit messages in the bugfix branch r4995 - r5495.
+ * Corrected leaching function: gives significant effect on npp and other output. 
+ * A few structural changes to the implementation of Landcover change and Forestry. Results are largely unaffected. 
+   See the documentation and individual commit messages in the bugfix branch r4995 - r5495.
+ * Support for the new version of the LPJ-GUESS Windows Shell, including reinstated 3D visualisation of vegetation structure removed in version 3.0. 64-bit (x64) compilation of the  model as a Windows dynamic-link library (DLL) is required. The shell binary is no longer stored in the svn repository: see the windows_version\readme_guesswin.txt file for its place of storage.
+ * Fixed some of the new compiler warnings which appear only with VSx2012 x64.
+
+------------------------------------------------------------------------
+r5506 | johan | 2016-12-08 18:04:12 +0100 (Thu, 08 Dec 2016) | 9 lines
+
+Reintegrated tech_benchmarks branch (r4719 - r5442): changes to hpc-related scripts including post-processing.
+
+Summary of changes:
+ * Added submit script for lunarc hpc resource aurora, and removed the one for the decommissioned platon. 
+   (svn tree conflict temporarily prevented removal of alarik.tmpl)
+ * Extra info output from submit script and concatenation of guess.log files.
+ * Optional extra precision in some output from commonoutput.cpp suitable for benchmark runs.
+   This has not yet been integrated with cmake script, so manual addition of a #define is required. 
+ * Changes to postprocessing scripts: Added a file to tslice, changed aslices from average to sum, added explicit pixoffset to gmap calls.
+------------------------------------------------------------------------
+r4726 | johan | 2015-12-22 15:22:04 +0100 (Tue, 22 Dec 2015) | 22 lines
+
+Reintegrated bugfix branch (r4620 - r4723): addressing carbon- and nitrogen imbalance bugs.
+
+Summary of changes:
+Bugs wrt allocations and other mass/flux balance accounting were fixed.
+These bug fixes remove period imbalances as observed with the current benchmark data sets (cru_ncep) and check limits.
+
+Fixes of N imbalance:
+- Prevent negative nmass_sap in growth().
+- A check for available N in the grasses before litter production in growth().
+- Moved misplaced resets of annual N-flux counters to driver.cpp.
+
+Fixes of C imbalance, e.g:
+- (Re)initiation of cmass_debt_inc, fixing a tree-pft:s-affecting imbalance bug, and introduction of a missing assert in allocation().
+- Fixing bug for C imbalance in simulations of land cover change with cropland.
+- Removing some redundant tests, and adding patchpft.litter_repr to patch.ccont() in landcover.cpp and .h, respectively.  
+
+Benchmark’s results:
+The bug fix branch differ slightly in global numbers from the cru_ncep branch (r4614) benchmark results. The differences in crop_global and global are primarily in fluxes (a few percent) while the rest of the report figures differ with less than 1 percent.
+
+A notable difference was seen in C-mass distribution were that the 'Total' in the difference between r4704 and r4614 of the C-mass tslice 1961-1990 varies between individual grid cells - the difference plot shows a "patchy" variation between gridcells in e.g. Europe (similar to what has been seen earlier for the tropics). This was satisfactorily investigated further by running a small part of the Europe gridlist (benchmark europe) with 100 patches, and comparing the difference with that of the normal 25-patches runs: the magnitude of the difference between grid cells was clearly reduced.
+
+
+------------------------------------------------------------------------
+r4688 | johan | 2015-12-14 16:08:55 +0100 (Mon, 14 Dec 2015) | 24 lines
+
+Reintegrated CRU_NCEP branch (r4472 - r4686): change of forcing dataset (to cru_ncep) and change to center-cridcell coordinates.
+
+N.B. The present cru_ncep dataset on simba has discrepances (from cru), and will be replaced as soon as a new dataset has been made available. The ncep team has been contacted. The fast-archive header files for these datasets might also be replaced in LPJ-GUESS at that point.
+
+Summary of changes:
+Change of forcing dataset from cru to cru_ncep, 
+with resulting changes to fast-archive header and bin files, to LPJ-GUESS input code, and to data paths (simba:/data)
+
+Gridcell lon lat coordinates changed from south-west corner of gridcell to center of gridcell, including in landuse files, and in ndep fastarchives,
+with resulting changes to LPJ-GUESS input code, to gridlists, to benchmark scripts, and to input data, including regeneration of ndep-fastarchives files (kept header file names).
+
+Outputs: 
+lon lat coordinates changed from south-west corner of gridcells to center of gridcells as in the new default forcing CRU-NCEP.
+
+Benchmark’s results:
+Large differences as compared to cru-based benchmark results in npp in gridcells close to (north and south of) some large mountain ranges indicating some kind of directional offset. See N.B. above.
+The global-benchmark report's global numbers are reasonable.
+
+Issues when updating:
+Two files were replaced (cru_1901_2006.h, cru_1901_2006misc.h) with files with different file names.
+
+Branch history:
+The tech branch (r4250 - r4288) was merged into the cru_ncep branch.
+
+------------------------------------------------------------------------
+r4619 | johan | 2015-11-20 15:56:57 +0100 (Fri, 20 Nov 2015) | 15 lines
+
+Complement to reintegration of branch CROP_REINTEGRATION_CONTinued (r4604).
+
+Small correction of reference/scientific_description.docx (r4618)
+
+Complementary information: 
+
+Bugfixes in reintegration of branch CROP_REINTEGRATION_CONTinued (r4604) not related specifically to crop, landcover, and landuse:
+
+- mnee (r4465): Fix for small issue where mnee had the wrong sign.
+- aslice sum (r4471): postprocess.sh was updated to handle new version of aslice -sum, which demands conversion units. 
+  See aslice -help for its new functionality.    
+- calendar years (4506-r4507): Calendar years are given instead of simulation years in output.
+- guesswin restart of model(r4519): Addressing an issue with multiple starts of the model when run as dll 
+  (not related to savestate restart).
+
+------------------------------------------------------------------------
+r4610 | johan | 2015-11-13 19:20:17 +0100 (Fri, 13 Nov 2015) | 12 lines
+
+Reintegrated Fixed_cnratios branch (r4285 - r4608)
+
+Comments from Michael:
+
+Restricted C to N ratios for root and sapwood to a narrow range.
+
+Enabled TeNE.
+
+Fixed bug: DON leaching.
+
+Benchmark results:
+Minor changes as result of C-to-N ratios changes. Fundamentally, no changes.
+------------------------------------------------------------------------
+r4604 | johan | 2015-11-13 16:25:45 +0100 (Fri, 13 Nov 2015) | 27 lines
+
+Reintegrated CROP_REINTEGRATION_CONTinued branch (r655 - r4603)
+
+Comments from Mats (additions, outputs) and Stefan (benchmark results):
+
+Summary of additions: 
+* New functionality for crop pft:s: sowing, phenology, daily allocation (separate versions with and without N limitation), irrigation, harvest.
+* Basic functionality for pasture and managed forest (harvest).
+* Extended functionality for land cover change: net lcc and gross transitions.
+* Monitoring of C and N balance each year and over historic simulation period.
+* Possibility to drop litter to soil any day of the year (used for crop pft:s).
+* 1% of N additions are lost as N gases.
+ 
+Outputs:
+* New columns in cflux.out when run_landcover is 1: Seed,  LU_ch (direct fluxes from wood harvest during LUC), Slow_h (fluxes from slow pool of harvested products).
+* New outputs files when run_landcover is 1: (irrigation.out, fphu.out, fhi.out, phu.out, seasonality.out, yield.out,sdate1.out, sdate2.out). Also separate cflux and cpool output for each land-cover type.
+
+Benchmark’s results:
+See next few commits for a more comprehensive analysis of the benchmark results.
+* Introduction of the new daily functions for the calculation of e.g. daily LAI, introduced some minor changes to carbon and nitrogen pools and also PFT distributions.
+
+Issues when updating:
+A new virtual function getmanagement() has been added to inputmodule.h
+
+The branch history includes crop r655, crop_reintegration r4039, and the current branch r4246
+
+
+
+------------------------------------------------------------------------
+r4106 | johan | 2015-04-28 16:48:02 +0200 (Tue, 28 Apr 2015) | 7 lines
+
+Reintegrated bugfix branch r3653 - r4105
+
+A random set of bugfixes, as well as laying down foundation for
+crop branch.
+Benchmarks: changes mostly due to the ifalive fix (r4078). Others
+are due to a changed expression evaluation order (r4072, r4103).
+
+------------------------------------------------------------------------
+r4035 | mischa | 2015-04-08 13:56:22 +0200 (Wed, 08 Apr 2015) | 17 lines
+
+Merge soil_textures branch:
+
+ Introduce soil-specific sand, silt and clay fractions. Fractions were derived
+ based on previous work by Anneli Poska and Stefan Olin, derived based on texture
+ classes in soil triangle (except for organic soil, where we kept the old global
+ values).
+
+ Now defaulting to these textures, but a textured_soil switch can be used to go
+ back to old soil (with same texture for all soils). It needs to be set to 0,
+ i.e, "textured_soil 0". It should be safe to remove this switch within a couple
+ of years.
+
+ Changes in benchmarks are minor and regional, improvements in central Sweden,
+ among other things. This change only affects CENTURY and nitrogen-enabled runs.
+ Changes in euroflux and EMDI benchmarks are very minor.
+
+
+------------------------------------------------------------------------
+r3668 | joe | 2014-06-27 10:39:00 +0200 (Fri, 27 Jun 2014) | 4 lines
+
+Reintegrated release_3.0 branch.
+
+Only documentation changes.
+
+------------------------------------------------------------------------
+r3655 | joe | 2014-06-24 10:46:29 +0200 (Tue, 24 Jun 2014) | 6 lines
+
+Reintegrated cfinput branch (r3569 - r3652)
+
+A couple of bugfixes in the CF input module.
+
+benchmarks: The CF input module isn't used in the benchmarks.
+
+------------------------------------------------------------------------
+r3649 | joe | 2014-06-23 15:50:25 +0200 (Mon, 23 Jun 2014) | 10 lines
+
+Reintegrated tech branch (r3574 - r3645)
+
+These are mostly changes which make it easier to maintain the branches which couple LPJ-GUESS to some other model, such as a global or regional climate model.
+
+LPJ-GUESS is now better prepared for running with leap years. LPJ-GUESS still runs with a fixed 365 day year, but the code no longer needs to rely on that fact. Instead of using the constant 365 in various places, you can now use Date::MAX_YEAR_LENGTH or date.year_length().
+
+The code in framework() for simulating a single day for a single grid cell has been lifted out into a separate function (makes it easy to reuse this code when the rest of the framework is very different, such as when coupling).
+
+benchmarks: Identical results
+
+------------------------------------------------------------------------
+r3642 | joe | 2014-06-16 15:46:53 +0200 (Mon, 16 Jun 2014) | 5 lines
+
+Reintegrated bugfix branch (r3333 - r3581)
+
+Misc bugfixes, see the bugfix branch log for details.
+
+benchmarks: The results change mostly in BVOC emissions, due to bugfix in r3459. These changed results have been reviewed by Guy Schurgers. Other results change also slightly as a result of bugfix in how we calculate mean forest floor PAR levels during growing season (r3353).
+------------------------------------------------------------------------
+r3540 | joe | 2014-05-07 14:32:23 +0200 (Wed, 07 May 2014) | 8 lines
+
+Reintegrated cfinput branch (r3407 - r3539)
+
+Polished the CF input module, no changes outside of that module.
+
+Mostly includes better error checks.
+
+benchmarks: Didn't rerun (CFInput isn't used in the benchmarks). You should expect identical results.
+
+------------------------------------------------------------------------
+r3405 | joe | 2014-03-19 09:46:54 +0100 (Wed, 19 Mar 2014) | 23 lines
+
+Reintegrated tech branch (r3368 - r3399)
+
+Briefly, the important changes this time are:
+
+* stand.gridcell no longer exists, use stand.get_gridcell()
+
+* patch.get_climate() or stand.get_climate() should now be used
+  instead of e.g. patch.stand.gridcell.climate
+
+* Gridcell now inherits from GuessContainer instead of ListArray,
+  this is mostly noticed in the new way of iterating over a
+  grid cell's stands (new iteration works like standard C++
+  iterators)
+
+The immediate reason for these changes is to allow for orphaned
+stands during land cover dynamics, but it will bring other 
+benefits as well.
+
+For more details about the motivation for GuessContainer, see
+documentation in framework/guesscontainer.h
+
+benchmarks: Identical results
+
+------------------------------------------------------------------------
+r3359 | joe | 2014-03-03 08:50:44 +0100 (Mon, 03 Mar 2014) | 23 lines
+
+Reintegrated NITROGEN branch (r2614 - r3358)
+
+Comments from David:
+
+Summary of additions:
+* Canexch - ALPHAA is updated to 0.55 from 0.5. ALPHAA_NLIM is updated to 0.7 from 0.75. Consistency regarding usage of indiv.phen. Bugfix in photosynthesis() when determine which alphaa to use (ifnlim switch on, always use ALPHAA_NLIM)
+* Vegdynam - Updated long-term N storage for new establishments
+* Growth - New function to calculate N retranslocation (resorption) fraction if long-term N storage cannot hold pre-set fraction in ins-file (nrelocfrac). Updated function to determine individual long-term N storage. Bugfix for flush_litter_repr(). Should be done even if N limitation is switched off.
+* Somdynam - New max decay rate for passivesom. This is change to get soil C pools accurate to global estimates. New respfrac for woody debris. Litter is transferred monthly (woody) or in right month (leaf and fine root).
+* ins-file - Leaflong for grasses have been changed from 1yr to 0.5yr.
+* Guess - Fixed sand, silt, and clay frac are updated according to Parton et al. 2010
+ 
+Benchmarks' results:
+ * Changes in smaller benchmarks (pristine sites/euroflux/emdi) are minor. Euroflux is slightly worse, while euroflux_globalpfts has improved
+ * Changes to European benchmark are minor to the pft distribution.
+ * Changes to Global benchmark are mainly in pft distribution. More dominant grass pft (LAI) in drier areas (western US, central Asia). 
+
+Outputs:
+ * New and updated output (agpp, fpc, aaet, clitter, nlitter, nmass)
+
+Issues when updating:
+ * Should not be any problems if N is already in version
+
+------------------------------------------------------------------------
+r3298 | joe | 2014-02-13 10:31:34 +0100 (Thu, 13 Feb 2014) | 6 lines
+
+Reintegrated cfinput branch (r2756 - r3293)
+
+This adds CFInput, an input module for NetCDF files compliant with the Climate and Forecast metadata standard (CF).
+
+benchmarks: Didn't rerun (CFInput isn't used in the benchmarks). You should expect identical results.
+
+------------------------------------------------------------------------
+r3243 | joe | 2014-02-05 14:30:54 +0100 (Wed, 05 Feb 2014) | 6 lines
+
+Reintegrated bugfix branch (r3237 - r3238)
+
+Bugfix in GUTIL which fixes formatting problems in the dprintf() function.
+The only change in this bugfix branch is to use a newer version of the GUTIL library.
+
+benchmarks: Didn't rerun global and europe for this small bugfix, but the smaller benchmarks had identical results.
+------------------------------------------------------------------------
+r3087 | joe | 2013-11-22 10:56:18 +0100 (Fri, 22 Nov 2013) | 10 lines
+
+Reintegrated tech branch (r3019 - r3071)
+
+More code extracted from CRUInput so it can be reused by other input modules, this time the ndep code and the core CRU functionality.
+
+The ndep code now also supports RCP scenarios.
+
+If the input module so chooses, the Date class can now be made aware of the relationship between simulation years and calendar years. If so, the output module will print results in calendar years.
+
+benchmarks: Identical results.
+
+------------------------------------------------------------------------
+r3001 | joe | 2013-10-28 10:21:17 +0100 (Mon, 28 Oct 2013) | 14 lines
+
+Reintegrated tech branch (r2999 - r3000)
+
+Only renamed two files, guessio_cru.cpp was renamed to cruinput.cpp and
+guessio.cpp was renamed to demoinput.cpp.
+
+Synchronize with this revision separately to avoid problems.
+
+Since there are no changes _in_ the files, if you get a conflict in for 
+instance guessio_cru.cpp, simply replace the new cruinput.cpp with your
+old guessio_cru.cpp and resolve the conflict by letting SVN remove the
+old file. 
+
+(It's of course not as easy as that if you bring in several revisions
+from trunk at once)
+------------------------------------------------------------------------
+r2982 | joe | 2013-10-21 14:55:54 +0200 (Mon, 21 Oct 2013) | 8 lines
+
+Reintegrated gdd5 branch (r2974 - r2975)
+
+This changes when gdd5 may be reset. Before, we would reset gdd5 when monthly temperature drops below 5 degrees C, but only if all summergreens had achieved full leafout (to avoid resetting gdd5 during the spring). The full leafout condition is now replaced by whether or not the warmest day has been reached. This makes gdd5 dependent only on temperature (and date), not on vegetation.
+
+For details, see r2975.
+
+benchmarks: Only minor changes, restricted to cold grid cells where full leaf out is sometimes not achieved for all summergreens. Even these grid cells seem mostly the same, but there is a slight decline in grasses (as expected since we now sometimes set phen to zero earlier).
+
+------------------------------------------------------------------------
+r2959 | joe | 2013-10-10 10:20:33 +0200 (Thu, 10 Oct 2013) | 10 lines
+
+Reintegrated tech branch (r2352 - r2958)
+
+Mostly comment changes and some fixed warnings. 
+All comments in guess.h converted to doxygen style which may give some conflicts,
+but they should be simple to solve since it's only comments.
+
+Bugfix in plib (some broken ins files could cause LPJ-GUESS to go into infinite memory eating loop)
+
+benchmarks: Identical results.
+
+------------------------------------------------------------------------
+r2942 | joe | 2013-10-07 10:54:57 +0200 (Mon, 07 Oct 2013) | 5 lines
+
+Reintegrated bugfix branch (r2783 - r2940)
+
+For details, see r2784, r2931 and r2932
+
+benchmarks: Results change due to r2931 (which only changes how the random seed is used). Changes seem to be minor and random.
+------------------------------------------------------------------------
+r2873 | joe | 2013-09-16 10:10:50 +0200 (Mon, 16 Sep 2013) | 10 lines
+
+Reintegrated parameterisation branch (r2741 - r2842)
+
+Two changes from Matthew Forrest (r2840 and r2841):
+
+* tcmax_est for TeBE has been changed from 10 to 18.8
+* kest_repr for shrubs has been changed from 20 to 200 (which is what trees had)
+
+For details, see r2840 and r2841.
+
+benchmarks: Minor changes which seem to match our expectations. The treeless zones spotted by Matthew are now dominated by TeBE. Most shrubs benefit from the kest_repr change. Juniperus Oxy goes down however, presumably the MRS is stealing resources from it.
+------------------------------------------------------------------------
+r2752 | joe | 2013-07-17 09:22:52 +0200 (Wed, 17 Jul 2013) | 37 lines
+
+Reintegrated iosplit branch (r2628 - r2744)
+
+The Input/Output module has been split into three different parts (a parameters module, input module(s) and output module(s)).
+
+Tip 1: synchronize with this revision separately (i.e. don't bring it in together with other stuff from trunk at the same time) since a lot of code has been moved around.
+
+Tip 2: after merging, you will need to do an SVN update before being able to compile (because there are new versions of PLIB and GUTIL).
+
+= Parameters =
+There's a new 'parameters' module responsible for declaring ins file parameters and parsing the ins file. Most code here will be familiar from the old I/O module's first section. The most important change is that it allows parameters to be declared from other modules, instead of having just one monolithic list of parameter declarations. An example where this is used is for parameters specific for a certain input module. Since those parameters should only be declared if the module is used, they are now declared by the module itself when the module is created. The old global variables used to store ins file parameters (which used to be in guess.h/cpp) have been moved to the parameters module.
+
+= Input =
+Input modules are now classes which inherit from InputModulse. Several input modules can now be compiled into the program, and which to use can be chosen on the command line (CRU is still default). The reason for choosing input module on the command line rather than in the ins file is simply that the input module may wish to declare its own parameters before we start parsing the ins file. Most of the code in the input modules looks exactly like before, except that some functions and variables are now members of a class instead of globals. Just like before, you can create a new input module by starting from scratch or modifying an existing one, but there's also a third way which can be nicer in some cases: inherit from one of the existing input modules and override some functionality. This typically means more code reuse, less duplication and less code maintenance costs (but it might not be feasible for some types of changes). All extra input modules for the benchmarks are implemented in this way. Most of the old input code has been kept in place, but the associated file global variables have been turned into member variables (and hence moved for instance from guessio_cru.cpp to cruinput.h)
+
+= Output =
+The output is also done in a separate module now. All our regular output is in a class called CommonOutput, but it is also possible to add additional output modules by creating a subclass of OutputModule. All existing output modules will be used. This can be a nice way of adding e.g. project specific output files without the need to modify our standard outannual (which often leads to merge conflicts since pretty much everyone makes changes there). The EUROFLUX benchmark uses this to add its own output without polluting the standard outannual with EUROFLUX code. The old functions outannual and define_output_tables have been moved and turned into member functions in CommonOutput, but their content is _identical_.
+
+The new input and output modules are modules in a more strict way than what we've had before. They need to inherit from a certain base class and implement a defined interface in order to work. They're also more independent. When you've created your module, you register it (in the module's cpp file) with a macro, for instance:
+
+REGISTER_INPUT_MODULE("cru", CRUInput)
+
+Once that's done the framework will know about the module (and you can choose it from the command line). You don't need to make any changes in the framework, or in other files, you just need to add your module code to the project and register it.
+
+If you want to have a look at the code, these are the interesting classes:
+
+InputModule - base class for input modules
+CRUInput - CRU input module
+DemoInput - Demo input module
+
+OutputModule - base class for output modules
+CommonOutput - our standard output
+
+ins file parameters is handled in framework/parameters.*
+
+There are also examples of additional modules for the benchmarks in benchmarks/extra_source. 
+
+benchmarks: identical results except for EUROFLUX which are changed only because the standard output code is used to generate the standard files now (before they were restricted to only the flux years).
+------------------------------------------------------------------------
+r2739 | joe | 2013-07-15 11:02:45 +0200 (Mon, 15 Jul 2013) | 6 lines
+
+Reintegrated parameterisation branch (r2070 - r2717)
+
+Changes made to grasses in europe.ins to make consistent with global.ins (see r2216)
+
+benchmarks: The ones with european ins file (europe, pristine_sites, diurnal_pristine_sites, emdi_europe and emdi_global) have minor changes, the ones with global ins file have unchanged results. In europe, C3 grass is more competitive (higher LAI and biomass), looking more like C3 grass in the global benchmark.
+
+------------------------------------------------------------------------
+r2701 | joe | 2013-06-28 13:13:33 +0200 (Fri, 28 Jun 2013) | 8 lines
+
+Reintegrated bugfix branch (r2360 - r2686)
+
+Two bugfixes (r2685 and r2361). Most important is a fix by Matthew Forrest for a problem which caused the restart year to always be just after spinup (when using serialization).
+
+For more information, see commit messages for r2685 and r2361.
+
+benchmarks: Identical results.
+
+------------------------------------------------------------------------
+r2588 | joe | 2013-05-03 15:09:06 +0200 (Fri, 03 May 2013) | 6 lines
+
+Reintegrated nitrogen branch (r2581 - r2586)
+
+Only a minor bug fix for when ifnlim is switched off. Results are not affected if ifnlim and ifcentury are switched on. See r2585 for details.
+
+benchmarks: Didn't re-run benchmarks since ifnlim and ifcentury are switched on in all the standard benchmarks.
+
+------------------------------------------------------------------------
+r2560 | david | 2013-04-30 11:05:01 +0200 (Tue, 30 Apr 2013) | 23 lines
+
+Re-integrate NITROGEN branch (r173 – r2556):
+ 
+Summary of additions:
+ * Added nitrogen demand/stress on Vmax in photosynthesis. Works like water stress with a demand and stress function in canopy_exchange().
+ * New vegetation pools containing nitrogen (leaf, root, sap, heart, storage).
+ * New SOM scheme following CENTRURY, including 6 litter pools and 5 SOM pools. If nitrogen stress is switched on new SOM scheme needs to be used, otherwise old scheme with a fast and slow soil pool can still be used.
+ * Nitrogen input (dry and wet deposition, fertilization, biological nitrogen fixation) and output (leaching, fluxes from soil and fire) have been developed.
+ * New equation to determine SLA from longevity.
+ * Alphaa (scaling factor for PAR absorption from leaf to plant projective area level) has been increased from a value of 0.5 to 0.75.
+ 
+Benchmarks' results:
+ * Changes in minor benchmarks (pristine sites/euroflux/emdi) gives a slightly better result. For pristine_site and diurnal_pristine_sites benchmark the max density pft changes towards more broadleaves.
+ * Changes to European benchmark are mainly in pft distribution. Reasons for changes are both because of SLA changes and to N stress.
+ * Changes to Global benchmark are mainly in pft distribution. Strong N stress in colder climates resulting in more grass pfts (especially in E. Siberia). But at the same time a better representation of broadleaves and more xeric woodlands in midwestern US. A better NPP gradient between boreal (lower NPP) and temperate/tropical (higher NPP) regions. Adding up to a slighter lower global NPP for the period 61 to 90.  Soil C pool has increased to ~1200 Pg and vegetation C pool has decreased to ~520 Pg.
+ 
+Outputs:
+ * Several new outputs are now available (cton_leaf.out, cton_veg.out, nflux.out, npool.out, nsources.out, nuptake.out, ngases.out, vmaxnlim.out). vmaxnlim.out is in annual average fraction  Vmax is limited (1 – no limitation, 0 – total limitation), npool.out is in kgN m-2, whereas the rest is in kgN ha-1.
+ 
+Issues when updating:
+ * There is a new soil scheme so if there have been changes there then make sure they also are included in the new version.
+ * Some new variables in soil classes. If there have been changes there, then make sure they are still correct. 
+ * New parameters in the ins-file.
+ * Make sure that establishment is done correctly (including all nitrogen initialization).
+------------------------------------------------------------------------
+r2348 | joe | 2013-02-21 10:52:32 +0100 (Thu, 21 Feb 2013) | 10 lines
+
+Reintegrated bugfix branch (r1572 - r2347)
+
+A couple of problems with prdaily going into infinite loops were corrected (r1809 and r1810).
+
+A bug in BVOC seasonality was fixed (r2263).
+
+The searchradius parameter in the CRU I/O module is now a double instead of an integer.
+
+benchmarks: BVOC results change as expected after the seasonality bugfix (results verified by Guy). Other results changed only slightly in some grid cells due to the prdaily changes.
+
+------------------------------------------------------------------------
+r2244 | joe | 2013-01-28 09:55:22 +0100 (Mon, 28 Jan 2013) | 11 lines
+
+Reintegrated BVOC branch (r2081 - r2243)
+
+These changes were made partly because non-fpar weighted values aren't always available when Nitrogen limitation comes into the model.
+
+Description of changes from Guy:
+
+Revised canopy temperature computation in BVOC: Scaling is made explicit to allow for computation with any fpc value. The within-canopy gradient has been removed to comply with the assumed big leaf, and to simplify the algorithm. Shortwave radiation is scaled with the absorbed fraction fpar*fpc. Longwave radiation and sensible heat are scaled with the leaf area available for energy exchange, lai*phen. Sensible heat is computed from actual evapotranspiration, which comes from canopy exchange and is already scaled with fpar*fpc. 
+
+The revised scaling reduces the leaf temperatures, leading to a reduction in isoprene and monoterpene emissions by approximately 15% globally. Reduction is highest in dry regions and somewhat larger in the tropics than in high latitudes. As expected, parameters other than those related to BVOC are not affected. 
+
+benchmarks: Identical results apart from the BVOC outputs (changed as described above).
+------------------------------------------------------------------------
+r2220 | joe | 2013-01-15 10:18:04 +0100 (Tue, 15 Jan 2013) | 16 lines
+
+Reintegrated canexch_simplification branch (r1523 - r2214)
+
+This branch contains a few simplifications in canexch needed for the upcoming nitrogen reintegration.
+
+* Removed monthly NPP mode. Monthly mode was removed because it doesn't reduce execution time much when nitrogen limitation is switched on (so the extra code complexity isn't worth it anymore).
+
+* Improved comments.
+
+* Removed the Lookup_lambda table since it can't be used together with nitrogen limitation (since photosynthesis doesn't scale linearly with fpar then)
+
+* Removed DEMAND_INDIV.
+
+* Simplified function signatures and removed variables not necessary anymore.
+
+benchmarks: Identical results apart from the benchmarks using the global ins file (due to removal of monthly mode). Those results were however identical with previous trunk version running in daily mode.
+
+------------------------------------------------------------------------
+r2146 | joe | 2012-12-19 18:15:42 +0100 (Wed, 19 Dec 2012) | 6 lines
+
+Reintegrated tech branch (r2130 - r2139)
+
+Support for running LPJ-GUESS on Alarik (new submit script and changes in the benchmarks script to support SLURM systems).
+
+benchmarks: Didn't re-run benchmarks this time since there were no changes in the model.
+
+------------------------------------------------------------------------
+r2101 | joe | 2012-12-12 09:40:39 +0100 (Wed, 12 Dec 2012) | 8 lines
+
+Reintegrated tech branch (r1966 - r2095)
+
+New way of using random generator seeds (see r1969 for details).
+
+Some minor technical polishing in the way MPI is used and some comments rewritten in Doxygen style.
+
+benchmarks: The results are changed as expected due to the new way of using random generator seeds. It should be purely stochastic changes however, the reports look more or less unchanged. Apart from the seed change, no other changes were made on this branch which could alter results.
+
+------------------------------------------------------------------------
+r1992 | joe | 2012-11-20 09:44:41 +0100 (Tue, 20 Nov 2012) | 27 lines
+
+Reintegrated npp_consistency branch (revision 978-1991)
+
+This fixes two types of inconsistencies we've had with various fluxes. Some of the monthly fluxes from canopy_exchange were lacking "alive" checks. Also, annual NPP and BVOC fluxes didn't always agree with the monthly fluxes since some fluxes were stored in the Individuals (which could have been removed before getting to outannual).
+
+The system for dealing with fluxes has been rewritten, hopefully making these kinds of problems less likely in the future.
+
+Some key points:
+
+* The Fluxes class takes care of all the tedious book keeping, the scientific code is unaware of details like whether fluxes are stored per month or year.
+* The scientific code only _reports_ fluxes, either for a patch (e.g. for soil respiration) or for an individual (e.g. isoprene).
+* If reported by an Individual through Individual::report_flux, the flux will only count if alive == true, so less risk of forgetting.
+* Some redundancies were removed. For instance, if we have monthly values we don't also store annual, instead the annual values are calculated from the monthly. veg flux isn't stored separately since it should be equal to -npp. Less redundancy should mean less risk of inconsistencies.
+
+This also marks the first version where the old Visual Studio 6.0 is no longer supported. For now, it's fairly easy to work around that and get it to compile, but it will probably get more and more difficult as the code makes use of more modern constructs.
+
+benchmarks: Apart from the fluxes which were expected to change, the results are identical. Files that changed due to now being consistent were:
+
+* aiso.out
+* amon.out
+* anpp.out
+* mgpp.out
+* mnee.out
+* mnpp.out
+* mra.out
+* miso.out
+* mmon.out
+
+------------------------------------------------------------------------
+r1818 | joe | 2012-10-03 15:02:37 +0200 (Wed, 03 Oct 2012) | 4 lines
+
+Reintegrated tech branch (revision 1815-1817)
+
+Only two minor updates in this one. One bug fix for the graphical windows shell, and an update in the build system to make it more convenient to run on different systems without making manual settings when running cmake.
+
+------------------------------------------------------------------------
+r1796 | joe | 2012-09-20 15:22:28 +0200 (Thu, 20 Sep 2012) | 7 lines
+
+Reintegrated tech branch (revision 1740-1795)
+
+The primary new functionality this time is the fact that save/load state functionality is now provided without extra coding, and that it also works in parallel without modifying submit scripts or similar.
+
+LPJ-GUESS is now run as a real MPI program when running in parallel (before the parallelism was achieved with tools from the job queue software). This means that we now need to load an mpi module before compiling and running LPJ-GUESS on clusters like Platon and Gimle (on Simba MPI is available by default).
+
+benchmarks: Identical results as before.
+------------------------------------------------------------------------
+r1674 | joe | 2012-08-27 11:11:14 +0200 (Mon, 27 Aug 2012) | 11 lines
+
+Reintegrated serialize branch (revision 1624-1673)
+
+This introduces the serialization framework, for saving and loading LPJ-GUESS state files. Only the actual serialization functionality is included here, there's no code for controlling when or how to load or save state from the ins file for instance.
+
+If you don't care about restart functionality, and you don't plan to reintegrate your code into trunk, you don't need to care much about this. If you want your code to work with restart, you'll need to make sure all serialize functions in all pertinent classes are updated with your new/changed member variables.
+
+Code being reintegrated into trunk after this point must have updated serialize functions.
+
+Aside from the new source code files, and all the new serialize functions, most code changes are due to the fact that the pftlist is now global, and doesn't need to be passed around as a parameter to functions.
+
+benchmarks: Identical results as before.
+------------------------------------------------------------------------
+r1474 | mischa | 2012-07-11 18:10:03 +0200 (Wed, 11 Jul 2012) | 26 lines
+
+Re-integrate diurnal_canexch branch (r1348 - r1473):
+
+Summary of changes:
+ * Adding diurnal mode to canopy exchange module. Affects demand, aet_water_stress,
+   water_scalar, npp and bvoc functions. Some changes to photosynthesis, including
+   signature. BVOC switched to pre-calculated air-temperature photosynthesis. New
+   netCDF/WATCH-based benchmark to test diurnal mode.
+ * Fix monoterpene storage
+ * Since current default data set (CRU) does not provide high resolution, the new benchmark
+   could serve as a reference as to how diurnal mode could be dealt with.
+ * On technical side: a stricter benchmark build system (r1446)
+
+Benchmarks' results:
+ * Changes in minor benchmarks (pristine sites/euroflux/emdi) are negligible. Results of the
+   new diurnal_pristine_sites benchmark, agree very well for most of the locations with the
+   original pristine_sites CRU-forced benchmark, which given different forcing and mode is 
+   encouraging.
+ * Changes to European and global benchmarks are within few percent in terms of C balance
+   and with BVOC fluxes most affected. Without any particular trend among PFTs, new global
+   sums for isoprene and monoterpene are 1-3% lower.
+ * Comparisons between global daily CRU and WATCH results, and daily and sub-daily WATCH
+   results will be available on stormbringer under /home/mischa/watch_benchmarks
+   Generally, global numbers are close with expected differences due to the forcing and
+   different water-stress treatment in diurnal mode.
+
+
+------------------------------------------------------------------------
+r1419 | joe | 2012-06-20 13:42:30 +0200 (Wed, 20 Jun 2012) | 8 lines
+
+Reintegrated benchmark_improvements branch (revision 514-1415)
+
+Summary of changes:
+
+* New legends with PFT names for the plots in the benchmarks report (r1220)
+* Prettier printer friendly report (r515)
+
+benchmarks: The same results as before, differences in the report as described above.
+------------------------------------------------------------------------
+r1413 | joe | 2012-06-19 12:56:08 +0200 (Tue, 19 Jun 2012) | 17 lines
+
+Reintegrated tech branch (revision 1379-1412)
+
+Summary of changes:
+
+* New insolation types (see r1380)
+* Gridlists for europe and global benchmarks are now randomly shuffled (r1397)
+* PBS based submit scripts (Simba and Platon) are less forgiving of failures
+* Misc comments, fixes of compiler warnings and other clean up
+
+benchmarks: The same results as before, except that the output for global and europe has a different order now (because of the shuffled gridlists).
+
+If you wish to compare your results before and after merging with these changes, you can sort the out files before comparing, for instance with the unix sort command.
+
+Due to the different order, some of the post processed results can differ by small amounts due to precision (floating point arithmetic isn't commutative).
+
+If you're using the insolation type NETSWRAD, the results can also change due to precision issues, but there shouldn't be any statistically significant changes.
+
+------------------------------------------------------------------------
+r1355 | mischa | 2012-05-10 14:23:59 +0200 (Thu, 10 May 2012) | 9 lines
+
+Re-integrate bugfix branch (r1351):
+
+Fix fpar allocation to the trees. This bug is not manifested in our current setup due to the
+ bole height being fixed at 0. Carbon assimilation was drastically underestimated if the bole
+ height was not zero.
+ 
+Thanks to Rita Wania for spotting the problem.
+
+No change to the benchmark results.
+------------------------------------------------------------------------
+r1346 | mischa | 2012-05-08 12:09:29 +0200 (Tue, 08 May 2012) | 26 lines
+
+Reintegrate diurnal_canexch branch (r1250 - r1327)
+
+Summary of changes:
+ * Check whether the bisection method is applicable by verifying that the value of the
+   fmid function at lambda_max is positive. This eliminates possible returned value of
+   lambda > lambda_max (due to the change to the upper limit in bisection method - x2).
+   The fmid function is increasing monotonously, but bisection method can only be applied
+   if in the given interval the function crosses zero. We assume that the opposite
+   situation of f(x1) > 0 doesn't actually ever happens. The value fmid(lambda_max) is
+   naturally related to non-water stressed photosynthesis, canopy conductance for which is
+   pre-calculated at the beginning of the day. This check necessitates spelling out the
+   magic number (r1254). In my tests this check most often failed on call from
+   forest_floor_conditions.
+ * A couple of other changes: change to photosynthesis interface and separating gpterm into
+   its own function are steps towards diurnal-mode integration. Notably fpar was dropped
+   from photosynthesis signature due to it always being 1.0
+
+Benchmark results:
+ * The influence of this change on the results is minor, since this trigger is not often
+   executed. The global vegetation pool is the most affected (up for 1961-1990 by 1.8%)
+   with soil C pools marginally decreasing (both ~0.4% for the same period). No
+   perceptible change in global PFTs distribution.
+   European results are generally inline. The vegetation pool is almost unchanged (up
+   0.07%), while the soil pools are dropping by under 1.4%. The difference might be down
+   to the varying PFT parametrisations.
+ * Other changes didn't affect the results
+------------------------------------------------------------------------
+r1311 | joe | 2012-04-18 13:17:01 +0200 (Wed, 18 Apr 2012) | 10 lines
+
+Reintegrated tech branch (revision 1190-1308)
+
+Summary of changes:
+
+* Refactorings in canexch.cpp and framework brought in from Michael's diurnal work
+* Lookup_lambda calculates its required size itself now (easier to change MAXTRIES)
+* benchmarks script doesn't copy ins file anymore (see r1209 for details)
+
+benchmarks: Identical results as before.
+
+------------------------------------------------------------------------
+r1251 | joe | 2012-03-05 09:24:02 +0100 (Mon, 05 Mar 2012) | 12 lines
+
+Reintegrated bugfix branch (revision 1234-1235)
+
+Summary of changes:
+
+Bugfix in grass allocation from Wolfgang Knorr. See commit message for r1235 for detail.
+
+benchmarks: The results are changed slightly (as expected) due to the bugfix. The changes in results have been reviewed by Wolfgang. Comment from Wolfgang:
+
+"The decisive thing seems to be that the changes are almost all very close to random, at least visually. The cpool impact in Europe is very small, looking at the absolute numbers, and also the NPP changes are pretty much random and in both directions. The closest to some kind of systematic effect I could find is here for Fagus. I think we can consider the changes minor.
+
+Whether values have improved or not I cannot say, observations are not really available to that accuracy. But I would say whatever the observations, I think the changes on average will be smaller than the accuracy of observations."
+
+------------------------------------------------------------------------
+r1232 | joe | 2012-02-29 09:41:38 +0100 (Wed, 29 Feb 2012) | 7 lines
+
+Reintegrated bugfix branch (revision 817-1231)
+
+Summary of changes:
+
+Two minor bugfixes from Michael (r1101 and r1115). These are follow-ups to the changes done on the sync_hydrology branch (reintegrated in r1014).
+
+benchmarks: The results are changed slightly (as expected) due to the bugfixes. There doesn't seem to be any noteworthy changes or trends. The reports look more or less identical.
+------------------------------------------------------------------------
+r1185 | joe | 2012-02-15 09:52:12 +0100 (Wed, 15 Feb 2012) | 12 lines
+
+Reintegrated tech branch (revision 1086-1184)
+
+Summary of changes:
+
+framework() function moved to separate file. No changes were made in framework() so resolving conflicts that this move causes should be simple as long as other changes aren't merged simultaneously (in other words, when you synchronize your branch, bring in this revision from trunk separately, not as part of an interval).
+
+A few improvements from Michael's diurnal work. These are added to trunk now because they make sense by themselves and gives other branches a chance to synchronize gradually. For instance, no-stress assimilation for each Standpft is precalculated, and respiration response to air and soil temperature is precalculated as well.
+
+Various minor fixes and clean up.
+
+benchmarks: Identical results as before.
+
+------------------------------------------------------------------------
+r1083 | joe | 2012-01-24 11:33:51 +0100 (Tue, 24 Jan 2012) | 15 lines
+
+Reintegrated tech branch (revision 621-1080)
+
+Summary of changes:
+
+Parameterisation of water uptake is now done in the ins file rather than as a #define.
+
+Minor improvements in build system and benchmarks script.
+
+Reading of CO2 file is more flexible.
+
+New submit script for multi-core systems.
+
+Some code clean up.
+
+benchmarks: The results are changed due to a precision issue (see r646). If you wish to compare your results before and after merging with this, change DEGTORAD in guessmath.h back to its original value (0.01745329) and you should get exactly identical results.
+------------------------------------------------------------------------
+r1014 | mischa | 2011-12-08 12:57:43 +0100 (Thu, 08 Dec 2011) | 10 lines
+
+Reintegrated sync_hydrology branch (r772 - r1009)
+
+Summary of changes:
+ * Add new hydrology function initial_infiltration that guarantees that some of
+   today's rainmelt is available in the top soil layer
+ * Expose function interception to framework, so that it can be called
+   independently from canopy_exchange
+
+benchmarks show ~1% increase in global C pool/fluxes and drop of ~3% in total
+ runoff
+------------------------------------------------------------------------
+r833 | joe | 2011-10-17 13:35:52 +0200 (Mon, 17 Oct 2011) | 11 lines
+
+Reintegrated BVOC branch (revision 616-832)
+
+Summary of changes:
+
+Parameter change in BVOC: frabs_Q (amount of light absorbed in the first layer) =0.35. This causes isoprene and monoterpene emissions to increase by ~20%.
+
+Figures and files added to the postprocessing of the global and europe benchmarks.
+
+canexch refactored so shared code can be used from BVOC (e.g. aet_monteith).
+
+benchmarks: BVOC results differ due to a parameter change, and increase (expectedly) by ~20%. Other results differ numerically due to refactorings, but the long-term averages are comparable (e.g., global NPP difference <0.05%).
+------------------------------------------------------------------------
+r719 | joe | 2011-09-05 10:24:03 +0200 (Mon, 05 Sep 2011) | 7 lines
+
+Reintegrated bugfix branch (revision 197-718).
+
+Summary of changes:
+
+Two bugfixes, one to prevent unnecessary calls to photosynthesis, and one to prevent prdaily to get stuck in infinite loop. For more information, see commit messages for r317 and r487.
+
+benchmarks: Identical results as before.
+------------------------------------------------------------------------
+r615 | joe | 2011-07-26 13:45:04 +0200 (Tue, 26 Jul 2011) | 16 lines
+
+Reintegrated tech branch (revision 444-613).
+
+Summary of changes:
+
+Re-organized the standard ins files in data/ins slightly, added separate ins files for demo and CRU.
+
+Support for finding and linking to NetCDF included in the build system.
+
+Various compiler warnings fixed. 
+
+guessmath.h introduced and some pure math functions moved there.
+
+Some clean up and fixes in the build system and submit scripts.
+
+benchmarks: Results changed due to many occurrences of 3.1415... changed to PI. This was to be expected since the precision changed, without the change sets that include the PI changes the results are identical. The generated benchmark report looks more or less the same however. The relevant change sets are: 481 and 490.
+
+------------------------------------------------------------------------
+r614 | joe | 2011-07-26 13:26:13 +0200 (Tue, 26 Jul 2011) | 3 lines
+
+Removed some unnecessary mergeinfo.
+
+This was added by the svn client when the source code for emdi and euroflux was moved, but it shouldn't be needed.
+------------------------------------------------------------------------
+r506 | joe | 2011-05-30 13:47:47 +0200 (Mon, 30 May 2011) | 12 lines
+
+Reintegrated benchmark_improvements branch (revision 177 to 505).
+
+Summary of changes:
+
+Fixed some bugs in the post processing scripts and made some of the generated pictures look better.
+
+Added option for running post processing only.
+
+Added reporting functionality (each benchmark now gets a folder named report with an html document showing the important generated files).
+
+benchmarks: Identical results (out files) as before. The post processing and reporting however gives other files now, as expected from the changes in the branch.
+
+------------------------------------------------------------------------
+r442 | joe | 2011-05-16 09:39:42 +0200 (Mon, 16 May 2011) | 14 lines
+
+Reintegrated tech branch (revision 384-439).
+
+Summary of changes:
+
+Some clean up in the instruction files (most notably in the file headers).
+
+Some comments cleaned up and re-written in Doxygen style.
+
+Reduced the amount of compiler warnings and fixed some compiler errors for some compilers.
+
+For more information, see the log for the tech branch.
+
+benchmarks: Identical results as before.
+
+------------------------------------------------------------------------
+r368 | joe | 2011-04-01 09:17:18 +0200 (Fri, 01 Apr 2011) | 20 lines
+
+Reintegrated tech branch (revision 314-367).
+
+Summary of changes:
+
+New output system, formatting and file handling separated from the I/O module.
+
+Submit script changes:
+  Shell wildcards can now be used in the OUTFILES variable (r340).
+  New submit script for Platon, removed Milleotto (r363-365).
+  Out files are now readable by others than the user running the job (r337).
+
+Output of species mean heights is now in the regular code, not just euroflux (r348).
+
+The special output files for euroflux benchmarks now work like the regular out files.
+
+Various formatting changes to the code and added the svn property Date to all source files.
+
+For more information, see the log for the tech branch.
+
+benchmarks: In principle the results were unchanged, but some of the output files for the emdi and euroflux benchmarks have a different formatting now (expected). The data in these files should be the same however.
+------------------------------------------------------------------------
+r343 | joe | 2011-03-21 16:40:03 +0100 (Mon, 21 Mar 2011) | 4 lines
+
+Reintegrated the BVOC branch.
+
+benchmarks: Compared with benchmarks results from previous trunk version.
+The only differences were the new BVOC outputs (aiso.out, amon.out, miso.out and mmon.out) for the benchmarks where BVOC calculations were enabled. The results in those files have been checked and approved by Guy.
+------------------------------------------------------------------------
+r306 | joe | 2011-02-23 10:46:28 +0100 (Wed, 23 Feb 2011) | 3 lines
+
+Reintegrated tech branch after a small compiler error fix for some GCC versions.
+
+benchmarks: Identical results as in trunk (didn't run europe and global for this small set of changes, wanted to get the compile error fix in the trunk ASAP)
+------------------------------------------------------------------------
+r297 | joe | 2011-02-18 16:43:11 +0100 (Fri, 18 Feb 2011) | 7 lines
+
+Reintegrated tech branch (revision 292-296).
+
+Summary of changes:
+
+Fixed compiler errors for VC 6.0, also disabled and fixed some warnings.
+
+benchmarks: Identical results as in trunk (didn't run europe and global for this small set of changes, wanted to get the compile error fix in the trunk ASAP)
+------------------------------------------------------------------------
+r290 | joe | 2011-02-18 14:24:40 +0100 (Fri, 18 Feb 2011) | 7 lines
+
+Reintegrated tech branch (revision 275-288).
+
+Summary of changes:
+
+Submit script for the NSC system Gimle which uses SLURM. Import feature for instruction files.
+
+benchmarks: Identical results as in trunk.
+------------------------------------------------------------------------
+r271 | joe | 2011-02-13 12:01:17 +0100 (Sun, 13 Feb 2011) | 9 lines
+
+Reintegrated tech branch (revision 163-259).
+
+Summary of changes:
+
+Technical changes in how the benchmarks work, some documentation changes and minor bug fixes.
+Also a change in how the submit scripts work in preparation for ins-files which can include other ins-files.
+See tech branch log (r163-259) for more information.
+
+benchmarks: Identical results as in trunk.
+------------------------------------------------------------------------
+r256 | joe | 2011-02-07 10:24:47 +0100 (Mon, 07 Feb 2011) | 9 lines
+
+Reintegrated gridcellclass branch.
+
+Summary of changes (from Mats):
+
+This version introduces the gridcell class as the top level structure. A gridcell corresponds to a geographic location and may contain one or several stands. Different stands are typically used to simulate different landcover types. Each landcover type may be represented by one or several stands. Each landcover type may use a different amount of patches. Crop stands have only one patch each and natural stands have the amount npatch specified in the instruction file. This means that the number of patches in a stand should be queried by using Stand.nobj, not the global variable npatch. Landcover area fractions are typically read from an input file containing coordinates, year and fraction values, but may also be set to fixed in the instruction file, setting the lcfrac_fixed variable to 1 and specifying the  landcover fractions by the varables lc_fixed_natural, lc_fixed_cropland etc. The new functionality may be bypassed by setting the instruction file parameter run_landcover to zero, simulating only one natural vegetation stand.
+
+
+benchmarks: Compared with benchmarks results from previous trunk version. 
+The output was expected to be identical but differed in two values in the global benchmark. The reason turned out to be the changes in rev. 219, where a refactoring which should lead to mathematically identical results seems to have altered the results due to the limited precision in floating point numbers (by an incredibly small amount though).
+------------------------------------------------------------------------
+r161 | joe | 2010-12-17 15:25:10 +0100 (Fri, 17 Dec 2010) | 5 lines
+
+Reintegrated tech branch after some minor fixes (see tech branch log).
+
+benchmarks: Compared with benchmarks results for v2.1. 
+Only difference was in the ins files (paths changed, see revision 128), and in the firert.out files of the euroflux benchmarks (expected due to bug fix, see revision 158).
+
+------------------------------------------------------------------------
+r136 | joe | 2010-12-07 11:17:42 +0100 (Tue, 07 Dec 2010) | 2 lines
+
+Another contact info update (Ben Smith -> Joe Lindstrom)
+
+------------------------------------------------------------------------
+r133 | joe | 2010-12-07 10:35:13 +0100 (Tue, 07 Dec 2010) | 1 line
+
+Reintegrated the guess2008 branch into trunk.
+------------------------------------------------------------------------
+r6 | joe | 2010-08-02 09:52:19 +0200 (Mon, 02 Aug 2010) | 5 lines
+
+Changed to native EOL style on all .cpp, .h and .txt files.
+
+This is in order to reduce the need for manually converting between unix and
+windows style line endings.
+
+------------------------------------------------------------------------
+r1 | joe | 2010-07-22 16:35:04 +0200 (Thu, 22 Jul 2010) | 1 line
+
+Added LPJ-GUESS with files from guess030124.
+------------------------------------------------------------------------

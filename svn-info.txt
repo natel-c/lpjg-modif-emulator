@@ -1,0 +1,13 @@
+Path: .
+Working Copy Root Path: /home/natel-c/git_projects/lpjg-modif-emulator/trunk
+URL: svn://stormbringer.nateko.lu.se/svn/LPJ-GUESS/trunk
+Relative URL: ^/LPJ-GUESS/trunk
+Repository Root: svn://stormbringer.nateko.lu.se/svn
+Repository UUID: 70805675-57b6-444b-bb00-18ecffcb4be8
+Revision: 13242
+Node Kind: directory
+Schedule: normal
+Last Changed Author: johan
+Last Changed Rev: 13203
+Last Changed Date: 2024-10-24 15:52:08 +0200 (Thu, 24 Oct 2024)
+

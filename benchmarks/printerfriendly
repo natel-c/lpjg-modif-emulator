@@ -1,0 +1,34 @@
+#!/bin/bash
+
+###############################################################################
+# Small help script used by the benchmarks script when creating printer 
+# friendly reports. This script simply finds all directories with reports and
+# calls report2html -p on them.
+###############################################################################
+
+work_dir=$1
+bm_root=$PWD
+
+cd $work_dir
+
+# A bit of a hack to get the names of the tests,
+# find all report.xml files, then strip away everything except the name
+# of the report.xml file's containing directory's containing directory
+tests=$(find . -name report.xml | xargs -n 1 dirname | xargs -n 1 dirname | xargs -n 1 basename)
+
+# Ensure Python 2 is used
+if [[ "$ARCH" == "lunarc" || "$ARCH" == "aurora" ]]; then
+  module load Python/2.7.18
+fi
+if [ -z "$(which python2)" ]; then
+    echo "Error in printerfriendly: Python 2 not found!"
+    exit 1
+fi
+
+# Go through all tests and call report2html -p
+for test in $tests; do
+    pushd ${test}/report
+    echo "Printer friendlifying "$test
+    python2 ${bm_root}/report2html -p report.xml ../../info.txt > printerfriendly.html
+    popd
+done

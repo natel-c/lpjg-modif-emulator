@@ -1,0 +1,67 @@
+!
+! Instruction file with global PFTs to be used with the
+! CF I/O module.
+!
+! Make sure to start LPJ-GUESS with -input cf when using this
+! instruction file.
+!
+
+import "global.ins"
+
+!///////////////////////////////////////////////////////////////////////////////////////
+! Forcing Data & gridlists
+!
+
+param "file_gridlist" (str "gridlist.txt")
+
+!param "file_gridlist_cf" (str "gridlist_cf.txt") ! This usage is depricated
+
+param "file_co2"      (str "c:/co2/co2_1700_2022.gcp.txt")
+
+! N deposition (blank string to use constant pre-industrial level of 2 kgN/ha/year)
+param "file_ndep"     (str "c:/ndep/GlobalNitrogenDeposition.bin")
+
+! SIMFIRE-BLAZE related files
+param "file_simfire"  (str "c:/fire/SimfireInput.bin")
+
+! Soil map
+param "file_soildata" (str "c:/soil/WISE/soilmap_center_interpolated.dat")
+!param "file_soildata" (str "../env/soils_lpj.dat")
+
+! Climate forcing files in NetCDF format
+
+param "file_temp"     (str "c:/nc/crujra.v2.4.5d.tmp.1901-2022.365d.noc.monmean.chunked_rew.nc")
+param "variable_temp" (str "tmp")
+
+param "file_prec"     (str "c:/nc/crujra.v2.4.5d.pre.1901-2022.365d.noc.monsum.chunked_rew.nc")
+param "variable_prec" (str "pre")
+
+param "file_insol"      (str "c:/nc/crujra.v2.4.5d.dswrf.1901-2022.365d.noc.monmean.chunked_rew.nc")
+param "variable_insol"  (str "dswrf")
+
+param "file_wind" (str "c:/nc/crujra.v2.4.5d.wind.1901-2022.365d.noc.monmean.chunked_rew.nc")
+param "variable_wind"  (str "wind")
+
+!param "file_relhum" (str "c:/nc/crujra.v2.4.5d.rhum.1901-2022.365d.noc.daymean.monmean.chunked_rew.nc")
+param "file_relhum" (str "")
+param "variable_relhum" (str "rhum")
+
+! Needed if relative humidity is not supplied
+param "file_pres"     (str "c:/nc/crujra.v2.4.5d.pres.1901-2022.365d.noc.monmean.chunked_rew.nc")
+param "variable_pres" (str "pres")
+
+! Needed if relative humidity is not supplied
+param "file_specifichum" (str "c:/nc/crujra.v2.4.5d.spfh.1901-2022.365d.noc.monmean.chunked_rew.nc")
+param "variable_specifichum" (str "spfh")
+
+! Wet days can only be used with monthly precipitation
+param "file_wetdays"     (str "c:/nc/cru_jra/2.4.5m/crujra.v2.4.5d.wet.1901-2022.365d.noc.if0.1mm.monsum.nc")
+param "variable_wetdays" (str "wetdays")
+
+! Min/max temp is required for BVOC,
+! if BVOC is switched off these can be set to ""
+param "file_min_temp"      (str "c:/nc/crujra.v2.4.5d.tmin.1901-2022.365d.noc.daymin.monmean.chunked_rew.nc")
+param "variable_min_temp"  (str "tmin")
+
+param "file_max_temp"      (str "c:/nc/crujra.v2.4.5d.tmax.1901-2022.365d.noc.daymax.monmean.chunked_rew.nc")
+param "variable_max_temp"  (str "tmax")
