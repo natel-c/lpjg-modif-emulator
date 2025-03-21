@@ -115,6 +115,11 @@ bool grassforcrop;
 int fire_popdens_method = 1; // default simfire.bin
 int fixed_popdens_hist = 0;
 int fixed_popdens_year = -10000;
+
+// Parameters for emulator
+int fixed_ndep;
+int fixed_ndep_year;
+
 bool map_text_file = true;
 
 xtring state_path;
@@ -264,6 +269,11 @@ void initsettings() {
 	textured_soil = true;
 	disturb_pasture = false;
 	grassforcrop = false;
+
+	// Parameters for emulator
+	fixed_ndep = 0;
+	fixed_ndep_year = 2015;
+
 }
 
 void initpft(Pft& pft,xtring& setname) {
@@ -591,7 +601,12 @@ void plib_declarations(int id,xtring setname) {
 		declareitem("fixed_popdens_hist",&fixed_popdens_hist,0,2,1,CB_NONE,"cfxinput only: fire population density handling (0)=no influence (even in spinup popdens can change, default), (1)=popdens start from year fixed_popdens_year onward, (2)=allways use popdens of fixed_popdens_year");
 		declareitem("fixed_popdens_year",&fixed_popdens_year,-10000,2100,1,CB_NONE, "cfxinput only: Year of popdens to use for fixed_popdens_hist>0");
 		declareitem("map_text_file", &map_text_file, 1, CB_NONE, "Whether to map text input file data in index file");
+		
+		// Parameters for emulator
+		declare_parameter("fixed_ndep", &fixed_ndep,0,3, "Use ndep of fixed_ndep_year (def. 1850) for the whole run (1: for the whole run, 2: starting with that year and onward, 0: time varying ndep");
+		declare_parameter("fixed_ndep_year", &fixed_ndep_year,0, 2100, "select year to be used as fixed nitrogen deposition year if fixed_ndep > 0");
 
+		 
 		declareitem("state_path", &state_path, 300, CB_NONE, "State files directory (for restarting from, or saving state files)");
 		declareitem("restart", &restart, 1, CB_NONE, "Whether to restart from state files");
 		declareitem("save_state", &save_state, 1, CB_NONE, "Whether to save new state files");
@@ -602,6 +617,7 @@ void plib_declarations(int id,xtring setname) {
 		declareitem("param",BLOCK_PARAM,CB_NONE,"Header for custom parameter block");
 		declareitem("st",BLOCK_ST,CB_NONE,"Header for block defining StandType");
 		declareitem("mt",BLOCK_MT,CB_NONE,"Header for block defining Management");
+
 
 		for (size_t i = 0; i < xtringParams.size(); ++i) {
 			const xtringParam& p = xtringParams[i];

@@ -89,6 +89,10 @@ public:
 	 *  \param mNHxwetdep: Monthly values for wet nitrogen deposition (kgN/m2/day) 
 	 *  \param mNOywetdep: Monthly values for wet nitrogen deposition (kgN/m2/day)
 	 */
+
+	// Parameters for emulator
+	int get_year_fixed_ndep(int year_in);
+
 	void get_one_calendar_year(int calendar_year,
 		double mNHxdrydep[12], double mNOydrydep[12],
 		double mNHxwetdep[12], double mNOywetdep[12]);

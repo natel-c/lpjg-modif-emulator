@@ -15,6 +15,7 @@
 #include "shell.h"
 #include "guessmath.h"
 #include "guessstring.h"
+#include "parameters.h"
 #include <stdio.h>
 #include <string>
 
@@ -223,9 +224,31 @@ void NDepData::getndep(const char* file_ndep,
 	}
 }
 
+// Parameters for emulator
+int NDepData::get_year_fixed_ndep(const int year_in){
+	if (fixed_ndep > 0 && fixed_ndep_year < FIRSTHISTYEARNDEP){
+		fail("fixed_ndep_year is %d, but that's not included in Lamarque historic ndep data set",
+        fixed_ndep_year);
+	}
+	int year_out = year_in;
+    if (fixed_ndep==0) {
+        return year_out;
+    } else if (fixed_ndep==1) {
+        year_out = fixed_ndep_year;
+    } else if (fixed_ndep==2) {
+        year_out = min(year_out,fixed_ndep_year);
+    } else if (fixed_ndep>0) {
+        fail("fixed_ndep %d not recognized", fixed_ndep);
+    }
+    return year_out;
+}
+
 void NDepData::get_one_calendar_year(int calendar_year,
 									 double mndrydep[12],
 									 double mnwetdep[12]) {
+	// Carolina: parameters for emulator
+    calendar_year = get_year_fixed_ndep(calendar_year);
+
 	int ndep_year = 0;
 
 	if (timeseries != FIXED && calendar_year >= Lamarque::FIRSTHISTYEARNDEP) {
@@ -253,6 +276,9 @@ void NDepData::get_one_calendar_year(int calendar_year,
 									 double mNOydrydep[12],
 									 double mNHxwetdep[12],
 									 double mNOywetdep[12]) {
+	// Parameters for emulator
+    calendar_year = get_year_fixed_ndep(calendar_year);
+
 	int ndep_year = 0;
 
 	if (timeseries != FIXED && calendar_year >= Lamarque::FIRSTHISTYEARNDEP) {

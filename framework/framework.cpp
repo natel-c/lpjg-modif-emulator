@@ -213,6 +213,16 @@ int framework(const CommandLineArguments& args) {
 		deserializer = auto_ptr<GuessDeserializer>(new GuessDeserializer(state_path));
 	}
 
+	// Parameters for emulator
+	if (fixed_ndep == 1) {
+		dprintf("Using Ndep from %d for all years.\n", fixed_ndep_year);
+	} else if (fixed_ndep == 2 ){
+		dprintf("Using Ndep from %d for all subsequent years.\n", fixed_ndep_year);
+	} else if ("fixed_ndep > 2"){
+		dprintf("Using fixed_ndep = %d, fixed_ndep_year = %d", fixed_ndep, fixed_ndep_year);
+	}
+
+
 	while (true) {
 
 		// START OF LOOP THROUGH GRID CELLS

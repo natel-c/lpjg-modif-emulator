@@ -330,6 +330,10 @@ extern int fixed_popdens_hist;
 /// Year of popdens to use if fixed_popdens_hist>0 (only applies within cfxinput)
 extern int fixed_popdens_year;
 
+// Parameters for emulator
+extern int fixed_ndep;
+extern int fixed_ndep_year;
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // Settings controlling the saving and loading from state files
 
