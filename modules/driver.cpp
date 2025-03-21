@@ -685,6 +685,10 @@ void dailyaccounting_gridcell(Gridcell& gridcell) {
 		climate.agdd0 = 0.0;
 		climate.agdd5 = 0.0;
 
+		// reset annual insolation and precipitation
+		climate.ainsol = 0.0;
+		climate.aprec = 0.0;
+
 		// reset annual nitrogen input variables
 		gridcell.aNH4dep  = 0.0;
 		gridcell.aNO3dep  = 0.0;
@@ -843,6 +847,10 @@ void dailyaccounting_gridcell(Gridcell& gridcell) {
 
 	climate.dprec_31.add(climate.prec);
 	climate.deet_31.add(climate.eet);
+
+	// Update sum of annual insolation and precipitatiom. Annual meaning sum since start of day 1.
+	climate.ainsol += climate.insol;
+	climate.aprec += climate.prec;
 
 	// Reset GDD and chill day counter if mean monthly temperature falls below base
 	// temperature

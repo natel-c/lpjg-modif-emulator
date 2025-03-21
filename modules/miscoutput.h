@@ -84,7 +84,10 @@ private:
 		   file_lai_natural, file_lai_forest, file_fpc_natural, file_fpc_forest,
 		   file_forest_cmass_harv_killed, file_forest_vegc, file_forest_cflux_veg, file_forest_harvest,
 		   file_harvest_flux_luc, file_cflux_forestry, file_cflux_regrowth, file_cflux_primary,
-		   file_cpool_forestry, file_cpool_regrowth, file_cpool_primary;
+		   file_cpool_forestry, file_cpool_regrowth, file_cpool_primary,
+
+		   // Climate
+		   file_aclimate;
 
 	// Stand type output
 	xtring file_anpp_sts, file_cmass_sts, file_cmass_tree_sts, file_cmass_tree_mort_sts, file_cmass_harv_killed_sts, file_cmass_wood_sts, 
@@ -142,7 +145,10 @@ private:
 		  out_lai_natural, out_lai_forest, out_fpc_natural, out_fpc_forest,
 		  out_forest_harvest, out_forest_vegc, out_forest_cflux_veg, out_forest_cmass_harv_killed,
 		  out_harvest_flux_luc, out_cflux_forestry, out_cflux_regrowth, out_cflux_primary,
-		  out_cpool_forestry, out_cpool_regrowth, out_cpool_primary;
+		  out_cpool_forestry, out_cpool_regrowth, out_cpool_primary,
+		  
+		  //Climate
+		  out_aclimate;
 
 	// Output files with stand type columns
 	Table out_anpp_sts, out_cmass_sts, out_cmass_tree_sts, out_cmass_tree_mort_sts, out_cmass_harv_killed_sts, out_cmass_wood_sts, out_cmass_wood_harv_sts,

@@ -199,6 +199,9 @@ MiscOutput::MiscOutput() {
 		declare_parameter("file_daily_storage",&file_daily_storage,300,"Daily storage allocation output file");
 	}
 
+	//Climate
+	declare_parameter("file_aclimate",&file_aclimate,300,"Annual climate");
+
 	print_anpp_stand = true;
 	print_lai_stand = true;
 	print_cmass_stand = true;
@@ -670,6 +673,12 @@ void MiscOutput::define_output_tables() {
 	ColumnDescriptors daily_columns;
 	daily_columns += ColumnDescriptors(crop_pfts, 13, 3);
 
+	// CLIMATE
+	ColumnDescriptors climate_columns;
+	climate_columns += ColumnDescriptor("temp",12,1);
+	climate_columns += ColumnDescriptor("prec",12,1);
+	climate_columns += ColumnDescriptor("insol",14,1);
+
 	// *** ANNUAL OUTPUT VARIABLES ***
 
 	create_output_table(out_forest_cmass_harv_killed,  file_forest_cmass_harv_killed,     harv_columns);
@@ -724,6 +733,9 @@ void MiscOutput::define_output_tables() {
 	create_output_table(out_speciesdiam_forest,    file_speciesdiam_forest,    speciesheights_columns);
 	create_output_table(out_speciesheights_natural, file_speciesheights_natural, speciesheights_columns);
 	create_output_table(out_speciesheights_forest,  file_speciesheights_forest,  speciesheights_columns);
+
+	//Climate
+	create_output_table(out_aclimate, file_aclimate, climate_columns);
 
 	if (run_landcover && run[CROPLAND]) {
 		create_output_table(out_yield,      file_yield,          crop_columns);
@@ -2615,6 +2627,12 @@ void MiscOutput::outannual(Gridcell& gridcell) {
 	outlimit_misc(out, out_seasonality,   gridcell.climate.prec_range);
 	outlimit_misc(out, out_seasonality,   gridcell.climate.ainsol/date.year_length());
 
+	// Print annual climate   - columns: rain,temp,rad 
+	outlimit_misc(out, out_aclimate, gridcell.climate.atemp_mean);	// mean of monthly temperatures... 
+	outlimit_misc(out, out_aclimate, gridcell.climate.aprec);						// annual precipitation sum 
+	outlimit_misc(out, out_aclimate, gridcell.climate.ainsol);	
+
+
 	if(st_pft_cmass)
 		delete[] st_pft_cmass;
 	if(st_total_cmass)
@@ -2625,6 +2643,17 @@ void MiscOutput::outannual(Gridcell& gridcell) {
 		delete[] st_total_cmass_harv_killed;
 }
 
+/// Local analogue of OutputRows::add_value for restricting output 
+/** Use to restrict output to specified range of years 
+* (or other user-specified limitation)					*/ 
+void outlimit_misc_daily(OutputRows& out, const Table& table, double d) { 
+ 
+	if (date.get_calendar_year() == 1960) { 
+		out.add_value(table, d); 
+	} 
+ 
+ } 
+
 /// Output of simulation results at the end of each day
 /** This function does not have to provide any information to the framework.
   */
@@ -2634,13 +2663,6 @@ void MiscOutput::outdaily(Gridcell& gridcell) {
 	double lat = gridcell.get_lat();
 	OutputRows out(output_channel, lon, lat, date.get_calendar_year(), date.day);
 
-	if (date.year < nyear_spinup) {
-		return;
-	}
-
-	outlimit_misc(out, out_daily_climate, gridcell.climate.temp);
-	outlimit_misc(out, out_daily_climate, gridcell.climate.prec);
-	outlimit_misc(out, out_daily_climate, gridcell.climate.rad);
 }
 
 void MiscOutput::openlocalfiles(Gridcell& gridcell, int coordinates_precision) {
