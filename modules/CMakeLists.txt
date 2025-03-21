@@ -26,6 +26,7 @@ set(headers
   soil.h
   soilinput.h
   ntransform.h
+  cfxinput.h
   )
 
 set(source  
@@ -55,6 +56,8 @@ set(source
   soil.cpp
   soilinput.cpp
   ntransform.cpp
+  cfxinput.cpp
+
   )
 
 include(add_guess_sources)

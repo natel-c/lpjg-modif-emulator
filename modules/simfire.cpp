@@ -383,7 +383,10 @@ void simfire_accounting_gridcell(Gridcell& gridcell) {
 		simfire_biome_mapping(gridcell);
 
 		// Update population density
-		simfire_update_pop_density(gridcell);
+		if (fire_popdens_method==1) {
+			simfire_update_pop_density(gridcell);
+		}
+
 	}
 	// Multi-year accounting of maximum annual fapar	
 	else if ( date.islastday && date.islastmonth ) {

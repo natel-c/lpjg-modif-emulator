@@ -111,6 +111,10 @@ int nyear_spinup;
 bool textured_soil;
 bool disturb_pasture;
 bool grassforcrop;
+
+int fire_popdens_method = 1; // default simfire.bin
+int fixed_popdens_hist = 0;
+int fixed_popdens_year = -10000;
 bool map_text_file = true;
 
 xtring state_path;
@@ -583,6 +587,9 @@ void plib_declarations(int id,xtring setname) {
 		declareitem("textured_soil",&textured_soil,1,CB_NONE,"Use silt/sand fractions specific to soiltype");
 		declareitem("disturb_pasture",&disturb_pasture,1,CB_NONE,"Whether fire and disturbances enabled on pastures (0,1)");
 		declareitem("grassforcrop",&grassforcrop,1,CB_NONE,"grassforcrop");
+		declareitem("fire_popdens_method",&fire_popdens_method,0,2,1,CB_NONE,"Fire popdens input methods: 0=(undefined), 1=simfire binary (default if not specified), 2=netcdf within cfxinput");
+		declareitem("fixed_popdens_hist",&fixed_popdens_hist,0,2,1,CB_NONE,"cfxinput only: fire population density handling (0)=no influence (even in spinup popdens can change, default), (1)=popdens start from year fixed_popdens_year onward, (2)=allways use popdens of fixed_popdens_year");
+		declareitem("fixed_popdens_year",&fixed_popdens_year,-10000,2100,1,CB_NONE, "cfxinput only: Year of popdens to use for fixed_popdens_hist>0");
 		declareitem("map_text_file", &map_text_file, 1, CB_NONE, "Whether to map text input file data in index file");
 
 		declareitem("state_path", &state_path, 300, CB_NONE, "State files directory (for restarting from, or saving state files)");

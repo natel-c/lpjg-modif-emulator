@@ -320,6 +320,16 @@ extern bool disturb_pasture;
 /// Whether to simulate cropland as pasture
 extern bool grassforcrop;
 
+/// source for the fire population density: 1=simfire.bin, 2=netCDF within cfxinput
+extern int fire_popdens_method;
+
+/// Keep popdens level at fixed_popdens_year (only applies within cfxinput)
+// 1=popdens start in year fixed_popdens_year, 2=allways use popdens of fixed_popdens_year
+extern int fixed_popdens_hist;
+
+/// Year of popdens to use if fixed_popdens_hist>0 (only applies within cfxinput)
+extern int fixed_popdens_year;
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // Settings controlling the saving and loading from state files
 
