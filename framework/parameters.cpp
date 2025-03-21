@@ -114,12 +114,10 @@ bool grassforcrop;
 
 // Parameters for emulator
 bool if_spinup_outputs;
-
+int spinup_clear2_year;
 int fire_popdens_method = 1; // default simfire.bin
 int fixed_popdens_hist = 0;
 int fixed_popdens_year = -10000;
-
-// Parameters for emulator
 int fixed_ndep;
 int fixed_ndep_year;
 
@@ -275,6 +273,7 @@ void initsettings() {
 
 	// Carolina:parameters for emulator
 	if_spinup_outputs = false;
+	spinup_clear2_year = -1;
 	fixed_ndep = 0;
 	fixed_ndep_year = 2015;
 
@@ -608,6 +607,7 @@ void plib_declarations(int id,xtring setname) {
 		declareitem("map_text_file", &map_text_file, 1, CB_NONE, "Whether to map text input file data in index file");
 		
 		// Parameters for emulator
+		declareitem("spinup_clear2_year",&spinup_clear2_year,1,10000,1,CB_NONE,"Year in spinup to clear vegetation again");
 		declare_parameter("fixed_ndep", &fixed_ndep,0,3, "Use ndep of fixed_ndep_year (def. 1850) for the whole run (1: for the whole run, 2: starting with that year and onward, 0: time varying ndep");
 		declare_parameter("fixed_ndep_year", &fixed_ndep_year,0, 2100, "select year to be used as fixed nitrogen deposition year if fixed_ndep > 0");
 
@@ -1518,6 +1518,11 @@ void plib_callback(int callback) {
 		if (!itemparsed("nrelocfrac")) badins("nrelocfrac");
 		if (!itemparsed("nfix_a")) badins("nfix_a");
 		if (!itemparsed("nfix_b")) badins("nfix_b");
+
+		// Parameters for emulator
+		if (spinup_clear2_year > nyear_spinup-1) {
+            fail("spinup_clear2_year (%d) must not be after last year in spinup period (i.e., nyear_spinup-1=%d)", spinup_clear2_year, nyear_spinup-1);
+        }
 
 		if (!itemparsed("ifcentury")) badins("ifcentury");
 		if (!itemparsed("ifnlim")) badins("ifnlim");

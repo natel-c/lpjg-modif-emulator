@@ -332,6 +332,7 @@ extern int fixed_popdens_year;
 
 // Parameters for emulator
 extern bool if_spinup_outputs;
+extern int spinup_clear2_year;
 extern int fixed_ndep;
 extern int fixed_ndep_year;
 
