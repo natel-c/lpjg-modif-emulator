@@ -112,6 +112,9 @@ bool textured_soil;
 bool disturb_pasture;
 bool grassforcrop;
 
+// Parameters for emulator
+bool if_spinup_outputs;
+
 int fire_popdens_method = 1; // default simfire.bin
 int fixed_popdens_hist = 0;
 int fixed_popdens_year = -10000;
@@ -270,7 +273,8 @@ void initsettings() {
 	disturb_pasture = false;
 	grassforcrop = false;
 
-	// Parameters for emulator
+	// Carolina:parameters for emulator
+	if_spinup_outputs = false;
 	fixed_ndep = 0;
 	fixed_ndep_year = 2015;
 
@@ -597,6 +601,7 @@ void plib_declarations(int id,xtring setname) {
 		declareitem("textured_soil",&textured_soil,1,CB_NONE,"Use silt/sand fractions specific to soiltype");
 		declareitem("disturb_pasture",&disturb_pasture,1,CB_NONE,"Whether fire and disturbances enabled on pastures (0,1)");
 		declareitem("grassforcrop",&grassforcrop,1,CB_NONE,"grassforcrop");
+		declareitem("if_spinup_outputs", &if_spinup_outputs,1,CB_NONE,"Whether to save outputs during spinup (1) or not (0)");
 		declareitem("fire_popdens_method",&fire_popdens_method,0,2,1,CB_NONE,"Fire popdens input methods: 0=(undefined), 1=simfire binary (default if not specified), 2=netcdf within cfxinput");
 		declareitem("fixed_popdens_hist",&fixed_popdens_hist,0,2,1,CB_NONE,"cfxinput only: fire population density handling (0)=no influence (even in spinup popdens can change, default), (1)=popdens start from year fixed_popdens_year onward, (2)=allways use popdens of fixed_popdens_year");
 		declareitem("fixed_popdens_year",&fixed_popdens_year,-10000,2100,1,CB_NONE, "cfxinput only: Year of popdens to use for fixed_popdens_hist>0");
